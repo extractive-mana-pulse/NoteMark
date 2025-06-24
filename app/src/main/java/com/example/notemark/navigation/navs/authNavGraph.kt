@@ -9,11 +9,9 @@ import com.example.notemark.auth.presentation.login.screens.LoginScreen
 import com.example.notemark.auth.presentation.registration.screens.RegistrationScreen
 import com.example.notemark.navigation.graphs.Graph
 import com.example.notemark.navigation.screens.AuthScreens
-import com.example.notemark.ui.theme.CustomTheme
 
 internal fun NavGraphBuilder.authNavGraph(
     navController: NavHostController,
-    theme: CustomTheme
 ) {
     navigation(
         route = Graph.AUTH,
@@ -24,7 +22,6 @@ internal fun NavGraphBuilder.authNavGraph(
         ) {
             LandingScreen(
                 navController = navController,
-                theme = theme
             )
         }
         composable(
@@ -32,13 +29,14 @@ internal fun NavGraphBuilder.authNavGraph(
         ) {
             LoginScreen(
                 navController = navController,
-                theme = theme
             )
         }
         composable(
             route = AuthScreens.Registration.route
         ) {
-            RegistrationScreen()
+            RegistrationScreen(
+                navController = navController,
+            )
         }
     }
 }

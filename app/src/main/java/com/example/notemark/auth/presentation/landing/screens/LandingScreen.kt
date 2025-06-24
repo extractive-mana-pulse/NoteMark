@@ -3,20 +3,28 @@ package com.example.notemark.auth.presentation.landing.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,48 +36,100 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.notemark.R
+import com.example.notemark.auth.presentation.util.DeviceConfiguration
 import com.example.notemark.navigation.screens.AuthScreens
-import com.example.notemark.ui.theme.CustomTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LandingScreen(
     navController: NavHostController = rememberNavController(),
-    theme: CustomTheme
 ) {
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Background image
-        Image(
-            painter = painterResource(id = R.drawable.image),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
+    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+    val deviceConfiguration = DeviceConfiguration.fromWindowSizeClass(windowSizeClass)
 
-        // Overlay sheet
-        LandingSheet(
-            theme = theme,
-            navController = navController,
-            modifier = Modifier.align(Alignment.BottomCenter) // or whatever alignment you want
-        )
+    when(deviceConfiguration) {
+        DeviceConfiguration.MOBILE_PORTRAIT -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.image),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                LandingSheet(
+                    navController = navController,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .clip(shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                )
+            }
+        }
+        DeviceConfiguration.MOBILE_LANDSCAPE -> {
+            Row(
+                modifier = Modifier.background(Color(0x1A5977F7)),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                Image(
+                    painter = painterResource(id = R.drawable.image),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                LandingSheet(
+                    navController = navController,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(shape = RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp)),
+                )
+            }
+        }
+        DeviceConfiguration.TABLET_PORTRAIT,
+        DeviceConfiguration.TABLET_LANDSCAPE,
+        DeviceConfiguration.DESKTOP -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+            ) {
+
+                Image(
+                    painter = painterResource(id = R.drawable.image),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth(),
+                    contentScale = ContentScale.Crop
+                )
+
+                LandingSheet(
+                    navController = navController,
+                    modifier = Modifier
+                        .padding(horizontal = 48.dp)
+                        .fillMaxSize()
+                        .clip(shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                        .align(Alignment.BottomCenter)
+                )
+            }
+        }
     }
 }
 
 @Composable
 fun LandingSheet(
-    theme: CustomTheme,
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
             .background(
-                color = theme.surfaceLowest,
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                color = MaterialTheme.colorScheme.surfaceContainerLowest,
             )
-            .padding(horizontal = 16.dp, vertical = 24.dp)
+            .padding(24.dp)
     ) {
         Text(
             text = "Your Own Collection\n" +
@@ -93,8 +153,8 @@ fun LandingSheet(
                 .height(56.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = theme.primary,
-                contentColor = theme.onPrimary
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             )
         ) {
             Text(
@@ -111,7 +171,7 @@ fun LandingSheet(
                 .fillMaxWidth()
                 .height(56.dp),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = theme.primary,
+                contentColor = MaterialTheme.colorScheme.primary,
             ),
             border = BorderStroke(1.dp, Color(0xFF5977F7)),
             shape = RoundedCornerShape(12.dp),

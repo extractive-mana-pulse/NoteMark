@@ -1,3 +1,5 @@
+import org.gradle.cache.internal.ProducerGuard.adaptive
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -66,4 +68,7 @@ dependencies {
     // type-safe navigation
     implementation(libs.navigation.compose)
     implementation(libs.kotlinx.serialization.json)
+
+    // adaptive-layout
+    implementation(libs.material3.adaptive)
 }
