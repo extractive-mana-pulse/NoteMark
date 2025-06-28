@@ -1,9 +1,10 @@
-import org.gradle.cache.internal.ProducerGuard.adaptive
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.devtools.ksp") version "2.2.0-RC3-2.0.2"
+    id("dagger.hilt.android.plugin")
+    id("kotlinx-serialization")
 }
 
 android {
@@ -12,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.notemark"
-        minSdk = 24
+        minSdk = 30
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -71,4 +72,17 @@ dependencies {
 
     // adaptive-layout
     implementation(libs.material3.adaptive)
+
+    // ktor
+    implementation (libs.ktor.client.core)
+    implementation (libs.ktor.client.android)
+    implementation (libs.ktor.client.serialization)
+    implementation(libs.ktor.client.auth)
+    implementation(libs.ktor.client.content.negotiation)
+
+    // hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
+    ksp(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
 }

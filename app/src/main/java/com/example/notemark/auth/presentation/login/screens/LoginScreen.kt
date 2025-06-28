@@ -2,6 +2,7 @@ package com.example.notemark.auth.presentation.login.screens
 
 import android.content.res.Configuration
 import android.content.res.Resources
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,13 +35,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.notemark.NoteMarkButton
 import com.example.notemark.NoteMarkLink
 import com.example.notemark.NoteMarkTextField
+import com.example.notemark.auth.presentation.login.vm.LoginState
+import com.example.notemark.auth.presentation.login.vm.LoginViewModel
+import com.example.notemark.auth.presentation.registration.vm.RegistrationState
 import com.example.notemark.auth.presentation.util.DeviceConfiguration
 import com.example.notemark.navigation.screens.AuthScreens
 
@@ -55,10 +65,12 @@ fun LoginScreen(
         val rootModifier = Modifier
             .fillMaxSize()
             .padding(innerPadding)
-            .clip(RoundedCornerShape(
-                topStart = 15.dp,
-                topEnd = 15.dp
-            ))
+            .clip(
+                RoundedCornerShape(
+                    topStart = 15.dp,
+                    topEnd = 15.dp
+                )
+            )
             .background(MaterialTheme.colorScheme.surfaceContainerLowest)
             .padding(
                 horizontal = 16.dp,
@@ -157,24 +169,42 @@ fun LoginSheet(
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
+
+    val loginViewModel: LoginViewModel = hiltViewModel()
+    val state by loginViewModel.loginState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state) {
+        if (state is LoginState.Success) {
+            navController.navigate(AuthScreens.LogIn.route)
+            loginViewModel.clearState()
+        }
+    }
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isDisabled by remember { mutableStateOf(true) }
-    var focusManager = LocalFocusManager.current
+    val focusManager = LocalFocusManager.current
 
     // Update button state based on email and password fields
     isDisabled = email.isBlank() || password.isBlank()
+    val context = LocalContext.current
 
     Column(
         modifier = modifier
     ) {
+        if (state is LoginState.Error) {
+            Toast.makeText(context, (state as LoginState.Error).message, Toast.LENGTH_SHORT).show()
+        }
         NoteMarkTextField(
             text = email,
             onValueChange = { email = it },
             label = "Email",
             hint = "john.doe@example.com",
             isInputSecret = false,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            focusManager = focusManager,
+            focusDirection = FocusDirection.Down,
+            imeAction = ImeAction.Next,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -185,15 +215,21 @@ fun LoginSheet(
             label = "Password",
             hint = "Password",
             isInputSecret = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            focusManager = focusManager,
+            focusDirection = FocusDirection.Down,
+            imeAction = ImeAction.Done,
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         NoteMarkButton(
-            text = "Log in",
-            onClick = { /*navController.navigate(AuthScreens.Main.route)*/ },
-            modifier = Modifier.fillMaxWidth()
+            text = if (state is LoginState.Loading) "Logging in..." else "Log in",
+            onClick = {
+                loginViewModel.loginUser(email, password)
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isDisabled
         )
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -207,7 +243,5 @@ fun LoginSheet(
 
 fun isTablet(): Boolean {
     val configuration = Resources.getSystem().configuration
-
-    return (configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK) >=
-            Configuration.SCREENLAYOUT_SIZE_LARGE
+    return (configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_LARGE
 }
