@@ -1,4 +1,4 @@
-package com.example.notemark
+package com.example.notemark.core.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.MaterialTheme

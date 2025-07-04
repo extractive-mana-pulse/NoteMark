@@ -69,7 +69,7 @@ fun LandingScreen(
         }
         DeviceConfiguration.MOBILE_LANDSCAPE -> {
             Row(
-                modifier = Modifier.background(Color(0x1A5977F7)),
+                modifier = Modifier.background(Color(0xFFE0EAFF)),
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
@@ -85,7 +85,7 @@ fun LandingScreen(
                 LandingSheet(
                     navController = navController,
                     modifier = Modifier
-                        .weight(1f)
+                        .weight(1.2f)
                         .clip(shape = RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp)),
                 )
             }
@@ -96,13 +96,13 @@ fun LandingScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(Color(0xFFE0EAFF))
                     .verticalScroll(rememberScrollState()),
             ) {
-
                 Image(
                     painter = painterResource(id = R.drawable.image),
                     contentDescription = null,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
 
@@ -110,7 +110,6 @@ fun LandingScreen(
                     navController = navController,
                     modifier = Modifier
                         .padding(horizontal = 48.dp)
-                        .fillMaxSize()
                         .clip(shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
                         .align(Alignment.BottomCenter)
                 )
@@ -147,7 +146,12 @@ fun LandingSheet(
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { navController.navigate(AuthScreens.Registration.route) },
+            onClick = {
+                navController.navigate(AuthScreens.Registration.route) {
+                    popUpTo(0)
+                    launchSingleTop = true
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -166,7 +170,9 @@ fun LandingSheet(
         Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedButton(
-            onClick = { navController.navigate(AuthScreens.LogIn.route) },
+            onClick = {
+                navController.navigate(AuthScreens.LogIn.route)
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),

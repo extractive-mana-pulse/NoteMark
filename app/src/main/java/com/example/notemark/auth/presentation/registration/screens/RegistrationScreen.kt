@@ -1,6 +1,5 @@
 package com.example.notemark.auth.presentation.registration.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,6 +21,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
@@ -29,37 +32,41 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.example.notemark.NoteMarkButton
-import com.example.notemark.NoteMarkLink
-import com.example.notemark.NoteMarkTextField
-import com.example.notemark.R
-import com.example.notemark.TextFieldWithTitle
 import com.example.notemark.auth.presentation.registration.vm.RegistrationState
 import com.example.notemark.auth.presentation.registration.vm.RegistrationViewModel
 import com.example.notemark.auth.presentation.util.DeviceConfiguration
+import com.example.notemark.auth.presentation.util.FormValidation
+import com.example.notemark.auth.presentation.util.ValidationResult
+import com.example.notemark.core.components.NoteMarkButton
+import com.example.notemark.core.components.NoteMarkLink
+import com.example.notemark.core.components.NoteMarkTextField
 import com.example.notemark.navigation.screens.AuthScreens
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegistrationScreen(
     navController: NavHostController = rememberNavController(),
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        contentWindowInsets = WindowInsets.statusBars
-    ) { innerPadding ->
+        contentWindowInsets = WindowInsets.statusBars,
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
+        ) { innerPadding ->
 
         val rootModifier = Modifier
             .fillMaxSize()
@@ -86,7 +93,8 @@ fun RegistrationScreen(
                         navController = navController,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 32.dp)
+                            .padding(top = 32.dp),
+                        snackbarHostState = snackbarHostState
                     )
                 }
             }
@@ -107,7 +115,8 @@ fun RegistrationScreen(
                         navController = navController,
                         modifier = Modifier
                             .weight(1f)
-                            .verticalScroll(rememberScrollState())
+                            .verticalScroll(rememberScrollState()),
+                        snackbarHostState = snackbarHostState
                     )
                 }
             }
@@ -129,7 +138,8 @@ fun RegistrationScreen(
                     RegistrationSheet(
                         navController = navController,
                         modifier = Modifier
-                            .widthIn(max = 540.dp)
+                            .widthIn(max = 540.dp),
+                        snackbarHostState = snackbarHostState
                     )
                 }
             }
@@ -163,101 +173,115 @@ private fun RegistrationHeader(
 @Composable
 fun RegistrationSheet(
     navController: NavHostController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    snackbarHostState : SnackbarHostState
 ) {
     val registrationViewModel: RegistrationViewModel = hiltViewModel()
     val registrationState by registrationViewModel.registrationState
 
+    val scope = rememberCoroutineScope()
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var repeatPassword by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
-    val context = LocalConfiguration.current
-
-    val isDisabled = username.isBlank() || email.isBlank() ||
-            password.isBlank() || repeatPassword.isBlank() ||
-            password != repeatPassword ||
-            registrationState is RegistrationState.Loading
 
     LaunchedEffect(registrationState) {
-        if (registrationState is RegistrationState.Success) {
-            navController.navigate(AuthScreens.LogIn.route)
-            registrationViewModel.clearState()
+        when(registrationState) {
+            is RegistrationState.Success -> {
+                navController.navigate(AuthScreens.LogIn.route)
+                registrationViewModel.clearState()
+            }
+            is RegistrationState.Error -> {
+                scope.launch {
+                    val result = snackbarHostState
+                        .showSnackbar(
+                            message = "Invalid login credentials",
+                            actionLabel = "",
+                            duration = SnackbarDuration.Short
+                        )
+                    when (result) {
+                        SnackbarResult.ActionPerformed -> {}
+                        SnackbarResult.Dismissed -> {}
+                    }
+                }
+            }
+            RegistrationState.Idle -> {}
+            RegistrationState.Loading -> {}
         }
     }
 
+    val usernameValidation = FormValidation.validateUsername(username)
+    val emailValidation = FormValidation.validateEmail(email)
+    val passwordValidation = FormValidation.validatePassword(password)
+    val repeatPasswordValidation = FormValidation.validateRepeatPassword(password, repeatPassword)
+
+    val isFormValid = FormValidation.isFormValid(username, email, password, repeatPassword)
+
     Column(
         modifier = modifier
-            .fillMaxWidth()
+            .fillMaxSize()
             .padding(top = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        if (registrationState is RegistrationState.Error) {
-            Text(
-                text = (registrationState as RegistrationState.Error).message
-            )
-        }
-        TextFieldWithTitle(
-            title = "Username",
-            placeholder = "John.doe",
+        NoteMarkTextField(
+            text = username,
+            onValueChange = { username = it },
+            label = "Username",
+            hint = "Enter username",
+            isInputSecret = false,
             focusManager = focusManager,
             focusDirection = FocusDirection.Down,
             imeAction = ImeAction.Next,
-            value = username,
-            onValueChange = { username = it },
+            errorText = if (usernameValidation is ValidationResult.Error) usernameValidation.message else null,
+            isError = usernameValidation is ValidationResult.Error,
+            showFocusText = "Use between 3 and 20 characters for your username."
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         NoteMarkTextField(
             text = email,
             onValueChange = { email = it },
             label = "Email",
-            hint = "john.doe@example.com",
+            hint = "Enter email",
             isInputSecret = false,
-            modifier = Modifier.fillMaxWidth(),
             focusManager = focusManager,
             focusDirection = FocusDirection.Down,
             imeAction = ImeAction.Next,
+            errorText = if (emailValidation is ValidationResult.Error) emailValidation.message else null,
+            isError = emailValidation is ValidationResult.Error
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         NoteMarkTextField(
             text = password,
             onValueChange = { password = it },
             label = "Password",
-            hint = "Password",
+            hint = "Enter password",
             isInputSecret = true,
-            modifier = Modifier.fillMaxWidth(),
             focusManager = focusManager,
             focusDirection = FocusDirection.Down,
             imeAction = ImeAction.Next,
+            errorText = if (passwordValidation is ValidationResult.Error) passwordValidation.message else null,
+            isError = passwordValidation is ValidationResult.Error,
+            showFocusText = "Use 8+ characters with a number or symbol for better security."
+        )
+
+        NoteMarkTextField(
+            text = repeatPassword,
+            onValueChange = { repeatPassword = it },
+            label = "Repeat Password",
+            hint = "Repeat password",
+            isInputSecret = true,
+            focusManager = focusManager,
+            focusDirection = FocusDirection.Down,
+            imeAction = ImeAction.Done,
+            errorText = if (repeatPasswordValidation is ValidationResult.Error) repeatPasswordValidation.message else null,
+            isError = repeatPasswordValidation is ValidationResult.Error
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        TextFieldWithTitle(
-            title = "Repeat password",
-            placeholder = "Password",
-            focusManager = focusManager,
-            focusDirection = FocusDirection.Enter,
-            imeAction = ImeAction.Done,
-            trailingIcon = {
-                Image(
-                    painter = painterResource(R.drawable.eye),
-                    contentDescription = null
-                )
-            },
-            value = repeatPassword,
-            onValueChange = { repeatPassword = it }
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
         NoteMarkButton(
-            text = if (registrationState is RegistrationState.Loading) "Creating..." else "Create account",
+            text = if (registrationState is RegistrationState.Loading) "" else "Create account",
             onClick = {
                 registrationViewModel.registerUser(
                     username = username,
@@ -265,15 +289,18 @@ fun RegistrationSheet(
                     password = password
                 )
             },
-            enabled = !isDisabled,
-            modifier = Modifier.fillMaxWidth()
+            enabled = isFormValid,
+            modifier = Modifier.fillMaxWidth(),
+            isLoading = registrationState is RegistrationState.Loading
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         NoteMarkLink(
             text = "Already have an account?",
-            onClick = { navController.navigate(AuthScreens.LogIn.route) },
+            onClick = {
+                navController.navigate(AuthScreens.LogIn.route)
+            },
             modifier = Modifier.fillMaxWidth()
         )
     }

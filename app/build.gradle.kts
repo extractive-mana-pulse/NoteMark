@@ -21,9 +21,15 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+
+
     buildTypes {
+        debug {
+            buildConfigField ("String", "BASE_URL", "\"https://notemark.pl-coding.com/\"")
+        }
         release {
             isMinifyEnabled = false
+            buildConfigField ("String", "BASE_URL", "\"https://notemark.pl-coding.com/\"")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -39,6 +45,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -76,9 +83,12 @@ dependencies {
     // ktor
     implementation (libs.ktor.client.core)
     implementation (libs.ktor.client.android)
-    implementation (libs.ktor.client.serialization)
+    implementation (libs.ktor.serialization)
     implementation(libs.ktor.client.auth)
     implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.logging)
 
     // hilt
     implementation(libs.hilt.android)

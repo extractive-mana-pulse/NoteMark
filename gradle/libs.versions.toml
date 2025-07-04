@@ -8,7 +8,9 @@ espressoCore = "3.6.1"
 # ktor
 ktor = "3.2.0"
 ktorClientAndroid = "3.2.0"
+ktorClientCio = "3.2.0"
 ktorClientCore = "3.2.0"
+ktorClientLogging = "3.2.0"
 ktorClientSerialization = "3.2.0"
 ktorClientContentNegotiation = "3.2.0"
 
@@ -43,8 +45,10 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 
 # ktor
 ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktorClientAndroid" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktorClientCio" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktorClientCore" }
-ktor-client-serialization = { module = "io.ktor:ktor-client-serialization", version.ref = "ktorClientSerialization" }
+ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktorClientLogging" }
+ktor-serialization = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktorClientSerialization" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktorClientContentNegotiation" }
 ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
 

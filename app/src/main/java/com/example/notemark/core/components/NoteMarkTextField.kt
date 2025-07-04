@@ -1,4 +1,4 @@
-package com.example.notemark
+package com.example.notemark.core.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -8,9 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -27,10 +24,13 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.example.notemark.R
 
 @Composable
 fun NoteMarkTextField(
@@ -44,12 +44,17 @@ fun NoteMarkTextField(
     focusDirection: FocusDirection,
     imeAction: ImeAction,
     showFocusText: String? = null,
+    errorText: String? = null,
+    isError: Boolean = false
 ) {
     var isPasswordVisible by remember {
         mutableStateOf(false)
     }
 
     var isFocused by remember { mutableStateOf(false) }
+
+    // Show error only when field is not focused, not empty, and has error
+    val shouldShowError = isError && !isFocused && text.isNotEmpty()
 
     Column(
         modifier = modifier
@@ -67,15 +72,17 @@ fun NoteMarkTextField(
                 .onFocusChanged {
                     isFocused = it.isFocused
                 },
-            visualTransformation = if(isFocused && isPasswordVisible) {
-                PasswordVisualTransformation(mask = '•')
+            visualTransformation = if(isInputSecret && !isPasswordVisible) {
+                PasswordVisualTransformation(mask = '*')
             } else VisualTransformation.None,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                cursorColor = MaterialTheme.colorScheme.primary,
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = Color.Transparent
+                cursorColor = if (shouldShowError) Color.Red else MaterialTheme.colorScheme.primary,
+                focusedBorderColor = if (shouldShowError) Color.Red else MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = if (shouldShowError) Color.Red else Color.Transparent,
+                errorBorderColor = Color.Red,
+                errorCursorColor = Color.Red
             ),
             placeholder = {
                 Text(
@@ -85,6 +92,7 @@ fun NoteMarkTextField(
             },
             textStyle = MaterialTheme.typography.bodyLarge,
             shape = RoundedCornerShape(10.dp),
+            isError = shouldShowError,
             trailingIcon = {
                 if(isInputSecret) {
                     IconButton(
@@ -95,13 +103,13 @@ fun NoteMarkTextField(
                         when {
                             isPasswordVisible -> {
                                 Icon(
-                                    imageVector = Icons.Default.VisibilityOff,
+                                    imageVector = ImageVector.vectorResource(R.drawable.eye),
                                     contentDescription = "Hide password"
                                 )
                             }
                             !isPasswordVisible -> {
                                 Icon(
-                                    imageVector = Icons.Default.Visibility,
+                                    imageVector = ImageVector.vectorResource(R.drawable.eye_off),
                                     contentDescription = "Show password"
                                 )
                             }
@@ -120,15 +128,28 @@ fun NoteMarkTextField(
                 }
             )
         )
-        if (isFocused && showFocusText != null) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = showFocusText,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-                modifier = Modifier.padding(horizontal = 4.dp)
-            )
+
+        when {
+            shouldShowError && errorText != null -> {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = errorText,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = Color.Red
+                    ),
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+            }
+            isFocused && showFocusText != null && !shouldShowError -> {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = showFocusText,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+            }
         }
     }
 }

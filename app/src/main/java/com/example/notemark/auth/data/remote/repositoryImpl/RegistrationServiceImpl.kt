@@ -1,6 +1,6 @@
 package com.example.notemark.auth.data.remote.repositoryImpl
 
-import com.example.notemark.auth.data.remote.HttpRoutes
+import com.example.notemark.core.HttpRoutes
 import com.example.notemark.auth.data.remote.api.RegistrationService
 import com.example.notemark.auth.domain.model.RegistrationModel
 import io.ktor.client.HttpClient

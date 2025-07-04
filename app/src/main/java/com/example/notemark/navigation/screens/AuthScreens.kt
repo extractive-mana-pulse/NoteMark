@@ -6,9 +6,6 @@ import kotlinx.serialization.Serializable
 sealed class AuthScreens(val route: String) {
 
     @Serializable
-    object Splash: AuthScreens("splash_screen")
-
-    @Serializable
     object Landing: AuthScreens("landing_screen")
 
     @Serializable

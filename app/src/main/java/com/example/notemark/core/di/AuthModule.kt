@@ -1,46 +1,39 @@
 package com.example.notemark.core.di
 
+import android.content.Context
 import com.example.notemark.auth.data.remote.api.LoginService
+import com.example.notemark.auth.data.remote.api.LogoutService
+import com.example.notemark.auth.data.remote.api.LogoutServiceImpl
 import com.example.notemark.auth.data.remote.api.RegistrationService
 import com.example.notemark.auth.data.remote.repositoryImpl.LoginServiceImpl
 import com.example.notemark.auth.data.remote.repositoryImpl.RegistrationServiceImpl
+import com.example.notemark.core.manager.SessionManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.android.Android
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import kotlinx.serialization.json.Json
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object NetworkModule {
+object AuthModule {
 
     @Provides
     @Singleton
-    fun provideHttpClient(): HttpClient {
-        return HttpClient(Android) {
-            install(ContentNegotiation) {
-                Json {
-                    prettyPrint = true
-                    isLenient = true
-                    ignoreUnknownKeys = true
-                }
-            }
-        }
-    }
+    fun provideSessionManager(@ApplicationContext context: Context): SessionManager = SessionManager(context)
+
 
     @Provides
     @Singleton
-    fun provideRegistrationService(client: HttpClient): RegistrationService {
-        return RegistrationServiceImpl(client)
-    }
+    fun provideRegistrationService(client: HttpClient): RegistrationService = RegistrationServiceImpl(client)
 
     @Provides
     @Singleton
-    fun provideLoginService(client: HttpClient): LoginService {
-        return LoginServiceImpl(client)
-    }
+    fun provideLoginService(client: HttpClient): LoginService = LoginServiceImpl(client)
+
+    @Provides
+    @Singleton
+    fun provideLogoutService(client: HttpClient): LogoutService = LogoutServiceImpl(client)
 }

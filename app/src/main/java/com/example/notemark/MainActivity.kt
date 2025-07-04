@@ -26,7 +26,7 @@ class MainActivity : ComponentActivity() {
 
             NoteMarkTheme {
                 AppNavigation(
-                    navController = navController
+                    navController = navController,
                 )
             }
         }

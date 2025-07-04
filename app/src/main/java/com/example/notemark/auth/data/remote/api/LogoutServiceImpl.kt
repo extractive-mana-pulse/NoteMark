@@ -1,38 +1,32 @@
-package com.example.notemark.auth.data.remote.repositoryImpl
+package com.example.notemark.auth.data.remote.api
 
 import com.example.notemark.core.HttpRoutes
-import com.example.notemark.auth.data.remote.api.LoginService
-import com.example.notemark.auth.domain.model.LoginModel
-import com.example.notemark.auth.domain.model.LoginResponse
+import com.example.notemark.core.factory.AccessTokenResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.header
 import io.ktor.client.request.post
-import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 
-class LoginServiceImpl(
+class LogoutServiceImpl(
     private val client: HttpClient
-): LoginService {
-
-    override suspend fun login(body: LoginModel): LoginResponse? {
+): LogoutService {
+    override suspend fun logout(): AccessTokenResponse? {
         return try {
             val response = client.post(
-                urlString = HttpRoutes.LOGIN
-            ) {
+                urlString = HttpRoutes.LOGOUT
+            ){
                 contentType(ContentType.Application.Json)
                 header("X-User-Email", HttpRoutes.EMAIL)
-                setBody(body)
             }
-
             if (response.status.isSuccess()) {
-                response.body<LoginResponse>()
+                response.body<AccessTokenResponse>()
             } else {
                 null
             }
-        } catch (e: Exception) {
+        } catch (e: Exception){
             null
         }
     }
