@@ -4,7 +4,9 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
+import androidx.navigation.toRoute
 import com.example.notemark.main.presentation.screens.CreateNoteScreen
+import com.example.notemark.main.presentation.screens.DetailsScreen
 import com.example.notemark.main.presentation.screens.HomeScreen
 import com.example.notemark.main.presentation.screens.ProfileScreen
 import com.example.notemark.main.presentation.screens.SettingsScreen
@@ -22,6 +24,14 @@ internal fun NavGraphBuilder.homeNavGraph(
 
         composable(route = HomeScreens.Home.route) {
             HomeScreen(navController = navController)
+        }
+
+        composable<HomeScreens.Details> {
+            val argument = it.toRoute<HomeScreens.Details>()
+            DetailsScreen(
+                navController = navController,
+                noteId = argument.noteId,
+            )
         }
 
         composable(route = HomeScreens.CreateNote.route) {

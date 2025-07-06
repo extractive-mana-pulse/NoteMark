@@ -17,4 +17,9 @@ sealed class HomeScreens(val route: String) {
     @Serializable
     object Settings : HomeScreens("settings")
 
+    @Serializable
+    data class Details(
+        val noteId: String
+    ): HomeScreens("details")
+
 }

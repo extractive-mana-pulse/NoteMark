@@ -1,5 +1,6 @@
 package com.example.notemark.auth.presentation.registration.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -189,14 +190,19 @@ fun RegistrationSheet(
     LaunchedEffect(registrationState) {
         when(registrationState) {
             is RegistrationState.Success -> {
-                navController.navigate(AuthScreens.LogIn.route)
+                navController.navigate(AuthScreens.LogIn.route) {
+                    popUpTo(AuthScreens.Registration.route) {
+                        inclusive = true
+                    }
+                }
                 registrationViewModel.clearState()
             }
             is RegistrationState.Error -> {
+                Log.e("RegistrationScreen", "Registration failed: ${(registrationState as RegistrationState.Error).message}")
                 scope.launch {
                     val result = snackbarHostState
                         .showSnackbar(
-                            message = "Invalid login credentials",
+                            message = "Invalid registration credentials: ${(registrationState as RegistrationState.Error).message}",
                             actionLabel = "",
                             duration = SnackbarDuration.Short
                         )
@@ -299,7 +305,11 @@ fun RegistrationSheet(
         NoteMarkLink(
             text = "Already have an account?",
             onClick = {
-                navController.navigate(AuthScreens.LogIn.route)
+                navController.navigate(AuthScreens.LogIn.route) {
+                    popUpTo(AuthScreens.Registration.route) {
+                        inclusive = true
+                    }
+                }
             },
             modifier = Modifier.fillMaxWidth()
         )

@@ -1,5 +1,6 @@
-package com.example.notemark.auth.data.remote.api
+package com.example.notemark.auth.data.remote.repositoryImpl
 
+import com.example.notemark.auth.data.remote.api.LogoutService
 import com.example.notemark.core.HttpRoutes
 import com.example.notemark.core.factory.AccessTokenResponse
 import io.ktor.client.HttpClient

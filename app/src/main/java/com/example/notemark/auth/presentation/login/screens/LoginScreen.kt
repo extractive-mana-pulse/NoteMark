@@ -196,7 +196,6 @@ fun LoginSheet(
                     popUpTo(0) {
                         inclusive = true
                     }
-                    launchSingleTop = true
                 }
                 loginViewModel.clearState()
             }
@@ -272,7 +271,11 @@ fun LoginSheet(
         NoteMarkLink(
             text = "Don't have an account?",
             onClick = {
-                navController.navigate(AuthScreens.Registration.route)
+                navController.navigate(AuthScreens.Registration.route) {
+                    popUpTo(AuthScreens.LogIn.route) {
+                        inclusive = true
+                    }
+                }
             },
             modifier = Modifier.fillMaxWidth()
         )

@@ -1,5 +1,6 @@
 package com.example.notemark.main.presentation.screens
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,8 +15,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -52,6 +56,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.notemark.R
+import com.example.notemark.core.manager.SessionManager
 import com.example.notemark.main.domain.model.Note
 import com.example.notemark.main.domain.model.NotesUiState
 import com.example.notemark.main.presentation.vm.MainViewModel
@@ -63,9 +68,13 @@ fun HomeScreen(
     navController: NavHostController = rememberNavController()
 ) {
     val context = LocalContext.current
+    val listState = rememberLazyListState()
     val viewModel: MainViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val listState = rememberLazyListState()
+    val sessionManager = SessionManager(context)
+
+    Log.d("HomeScreen", "Token: ${sessionManager.getAccessToken()}")
+    Log.d("HomeScreen", "Token: ${sessionManager.getRefreshToken()}")
 
     Scaffold(
         topBar = {
@@ -168,21 +177,28 @@ fun HomeScreen(
 
             uiState.error?.let { error ->
                 Toast.makeText(context, "Error message: $error", Toast.LENGTH_SHORT).show()
+                Log.e("HomeScreen's:", "Error message: $error")
             }
 
-            LazyColumn(
-                state = listState,
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                state = rememberLazyGridState(),
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 itemsIndexed(uiState.notes) { index, note ->
-                    NoteItem(note = note, modifier = Modifier)
+                    NoteItem(
+                        navController = navController,
+                        note = note,
+                        modifier = Modifier
+                    )
                 }
 
                 // Loading indicator for pagination
                 if (uiState.isLoading && uiState.notes.isNotEmpty()) {
-                    item {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -234,13 +250,22 @@ private fun EmptyState(uiState: NotesUiState) {
 @Composable
 fun NoteItem(
     modifier: Modifier,
+    navController: NavHostController = rememberNavController(),
     note: Note
 ) {
 
     Column(
         modifier = modifier
-            .padding(16.dp)
-            .background(MaterialTheme.colorScheme.surfaceContainerLowest),
+            .clickable {
+                navController.navigate(HomeScreens.Details(
+                    noteId = note.id
+                ))
+            }
+            .background(
+                MaterialTheme.colorScheme.surfaceContainerLowest,
+                RoundedCornerShape(16.dp)
+            )
+            .padding(16.dp),
         horizontalAlignment = Alignment.Start,
     ) {
 

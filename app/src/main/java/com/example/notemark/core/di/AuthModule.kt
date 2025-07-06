@@ -3,7 +3,7 @@ package com.example.notemark.core.di
 import android.content.Context
 import com.example.notemark.auth.data.remote.api.LoginService
 import com.example.notemark.auth.data.remote.api.LogoutService
-import com.example.notemark.auth.data.remote.api.LogoutServiceImpl
+import com.example.notemark.auth.data.remote.repositoryImpl.LogoutServiceImpl
 import com.example.notemark.auth.data.remote.api.RegistrationService
 import com.example.notemark.auth.data.remote.repositoryImpl.LoginServiceImpl
 import com.example.notemark.auth.data.remote.repositoryImpl.RegistrationServiceImpl

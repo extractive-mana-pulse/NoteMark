@@ -38,8 +38,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.notemark.R
+import com.example.notemark.main.domain.model.Note
 
-@Preview(showBackground = true, showSystemUi = true)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateNoteScreen(
@@ -94,7 +94,7 @@ fun CreateNoteScreen(
                 .background(MaterialTheme.colorScheme.onPrimary)
                 .padding(innerPadding),
         ) {
-            Column() {
+            Column {
                 TextField(
                     value = title,
                     onValueChange = { title = it },
@@ -147,45 +147,6 @@ fun CreateNoteScreen(
                     )
                 )
             }
-            Sheet(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-            )
-        }
-    }
-}
-
-@Composable
-fun Sheet(modifier: Modifier) {
-    Row(
-        modifier = modifier
-            .padding(16.dp)
-            .background(
-                MaterialTheme.colorScheme.surface,
-                shape = MaterialTheme.shapes.medium
-            ),
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        IconButton(
-            onClick = { /*TODO*/ },
-            modifier = Modifier
-        ) {
-            Icon(
-                imageVector = ImageVector.vectorResource(R.drawable.edit),
-                contentDescription = "Attachment"
-            )
-        }
-        IconButton(
-            onClick = {
-                // TODO:
-            },
-            modifier = Modifier
-        ) {
-            Icon(
-                imageVector = ImageVector.vectorResource(R.drawable.book_open),
-                contentDescription = "Attachment"
-            )
         }
     }
 }

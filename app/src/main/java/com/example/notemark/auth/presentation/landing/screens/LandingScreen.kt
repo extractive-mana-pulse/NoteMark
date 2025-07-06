@@ -148,8 +148,9 @@ fun LandingSheet(
         Button(
             onClick = {
                 navController.navigate(AuthScreens.Registration.route) {
-                    popUpTo(0)
-                    launchSingleTop = true
+                    popUpTo(AuthScreens.Landing.route) {
+                        inclusive = true
+                    }
                 }
             },
             modifier = Modifier
@@ -171,7 +172,11 @@ fun LandingSheet(
 
         OutlinedButton(
             onClick = {
-                navController.navigate(AuthScreens.LogIn.route)
+                navController.navigate(AuthScreens.LogIn.route){
+                    popUpTo(AuthScreens.Landing.route) {
+                        inclusive = true
+                    }
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
