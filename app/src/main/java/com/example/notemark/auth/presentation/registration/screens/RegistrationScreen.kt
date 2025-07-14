@@ -177,10 +177,10 @@ fun RegistrationSheet(
     modifier: Modifier = Modifier,
     snackbarHostState : SnackbarHostState
 ) {
+    val scope = rememberCoroutineScope()
     val registrationViewModel: RegistrationViewModel = hiltViewModel()
     val registrationState by registrationViewModel.registrationState
 
-    val scope = rememberCoroutineScope()
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -216,6 +216,8 @@ fun RegistrationSheet(
             RegistrationState.Loading -> {}
         }
     }
+
+
 
     val usernameValidation = FormValidation.validateUsername(username)
     val emailValidation = FormValidation.validateEmail(email)

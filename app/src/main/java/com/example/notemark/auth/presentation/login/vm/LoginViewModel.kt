@@ -11,6 +11,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -40,6 +42,7 @@ class LoginViewModel @Inject constructor(
                         accessToken = result.accessToken,
                         refreshToken = result.refreshToken
                     )
+                    sessionManager.saveUserName(result.username)
                     _loginState.value = LoginState.Success(result)
                 } else {
                     _loginState.value = LoginState.Error("Registration failed, please try again!")
@@ -50,14 +53,44 @@ class LoginViewModel @Inject constructor(
         }
     }
 
+    private val _logoutState = MutableStateFlow<LogoutState>(LogoutState.Idle)
+    val logoutState: StateFlow<LogoutState> = _logoutState.asStateFlow()
+
     fun logoutUser() {
         viewModelScope.launch(Dispatchers.IO) {
-            logoutService.logout()
+            try {
+                _logoutState.value = LogoutState.Loading
+
+                // Call logout API
+                val result = logoutService.logout()
+
+                // Clear local data regardless of API result
+                sessionManager.clearTokens()
+
+                if (result != null) {
+                    _logoutState.value = LogoutState.Success("Logged out successfully")
+                } else {
+                    // Even if API fails, we cleared local data, so consider it success
+                    _logoutState.value = LogoutState.Success("Logged out successfully")
+                }
+            } catch (e: Exception) {
+                // Even if API fails, clear local data and consider it success
+                sessionManager.clearTokens()
+                _logoutState.value = LogoutState.Success("Logged out successfully")
+            }
         }
-        clearState()
     }
 
-    fun clearState() { _loginState.value = LoginState.Idle }
+    fun clearState() {
+        _logoutState.value = LogoutState.Idle
+    }
+}
+
+sealed class LogoutState {
+    object Idle : LogoutState()
+    object Loading : LogoutState()
+    data class Success(val message: String) : LogoutState()
+    data class Error(val message: String) : LogoutState()
 }
 
 sealed class LoginState {

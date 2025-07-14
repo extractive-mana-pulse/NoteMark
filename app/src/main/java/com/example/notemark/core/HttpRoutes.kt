@@ -7,7 +7,7 @@ object HttpRoutes {
     const val LOGIN = "$BASE_URL/api/auth/login"
     const val REFRESH_TOKEN = "$BASE_URL/api/auth/refresh"
     const val EMAIL = "invoker1441@gmail.com"
-    const val GET_NOTES = "$BASE_URL/api/notes"
+    const val NOTES = "$BASE_URL/api/notes"
     const val LOGOUT = "$BASE_URL/api/auth/logout"
 
 }

@@ -11,6 +11,8 @@ import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -18,6 +20,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
@@ -25,9 +28,13 @@ class HttpClientFactory @Inject constructor(
     private val sessionManager: SessionManager
 ) {
     private val refreshClient = HttpClient(CIO) {
+        install(Logging) {
+            level = LogLevel.ALL
+
+        }
         install(ContentNegotiation) {
             json(
-                Json {
+                json = Json {
                     prettyPrint = true
                     isLenient = true
                     ignoreUnknownKeys = true
@@ -36,6 +43,7 @@ class HttpClientFactory @Inject constructor(
         }
         defaultRequest {
             contentType(ContentType.Application.Json)
+            header("Authorization", "Bearer ${sessionManager.getAccessToken()}")
             header("X-User-Email", HttpRoutes.EMAIL)
         }
     }
@@ -69,40 +77,42 @@ class HttpClientFactory @Inject constructor(
                         )
                     }
 
+
                     refreshTokens {
                         val refreshToken = sessionManager.getRefreshToken()
+                        Log.d("TokenRefresh", "Attempting refresh with token: ${refreshToken?.take(10)}...")
 
-                        val response = refreshClient.post<AccessTokenRequest, AccessTokenResponse>(
-                            route = HttpRoutes.REFRESH_TOKEN,
-                            body = AccessTokenRequest(refreshToken = refreshToken ?: "")
-                        )
+                        if (refreshToken.isNullOrEmpty()) {
+                            Log.w("TokenRefresh", "No refresh token available, clearing tokens")
+                            sessionManager.clearTokens()
+                            return@refreshTokens BearerTokens(accessToken = "", refreshToken = "")
+                        }
 
-                        when (response) {
-                            is Result.Success -> {
-                                sessionManager.saveTokens(
-                                    accessToken = response.data.accessToken,
-                                    refreshToken = response.data.refreshToken
-                                )
-
-                                BearerTokens(
-                                    accessToken = response.data.accessToken,
-                                    refreshToken = response.data.refreshToken
-                                )
+                        try {
+                            val response = refreshClient.post(
+                                urlString = HttpRoutes.REFRESH_TOKEN
+                            ) {
+                                setBody(AccessTokenRequest(refreshToken = refreshToken))
+                                contentType(ContentType.Application.Json)
                             }
-                            is Result.Error -> {
-                                // Only clear tokens if it's an authentication error (401/403)
-                                // Not for network errors, server errors, etc.
-                                // initially here was just sessionManager.clearTokens()
-                                // and it automatically activates clearing token function
-                                // when any type of error occur during the app in process.
-                                if (response.error.contains("401") || response.error.contains("403")) {
-                                    sessionManager.clearTokens()
-                                } else {
-                                    Log.d("HttpClient", "Refresh token failed but not auth error: ${response.error}")
-                                }
 
+                            if (response.status.isSuccess()) {
+                                val tokenResponse = response.body<AccessTokenResponse>()
+                                Log.d("TokenRefresh", "Token refresh successful")
+                                sessionManager.saveTokens(tokenResponse.accessToken, tokenResponse.refreshToken)
+                                BearerTokens(
+                                    accessToken = tokenResponse.accessToken,
+                                    refreshToken = tokenResponse.refreshToken
+                                )
+                            } else {
+                                Log.e("TokenRefresh", "Token refresh failed with status: ${response.status}")
+                                sessionManager.clearTokens()
                                 BearerTokens(accessToken = "", refreshToken = "")
                             }
+                        } catch (e: Exception) {
+                            Log.e("TokenRefresh", "Token refresh exception: ${e.message}")
+                            sessionManager.clearTokens()
+                            BearerTokens(accessToken = "", refreshToken = "")
                         }
                     }
                 }
@@ -111,37 +121,13 @@ class HttpClientFactory @Inject constructor(
     }
 }
 
+@Serializable
 data class AccessTokenRequest(
     val refreshToken: String
 )
 
+@Serializable
 data class AccessTokenResponse(
     val accessToken: String,
     val refreshToken: String,
-    val username: String
 )
-
-sealed class Result<out T> {
-    data class Success<T>(val data: T) : Result<T>()
-    data class Error(val error: String) : Result<Nothing>()
-}
-
-suspend inline fun <reified T, reified R> HttpClient.post(
-    route: String,
-    body: T
-): Result<R> {
-    return try {
-        val response = post(route) {
-            setBody(body)
-        }
-
-        if (response.status.isSuccess()) {
-            val responseBody = response.body<R>()
-            Result.Success(responseBody)
-        } else {
-            Result.Error("HTTP ${response.status.value}: ${response.status.description}")
-        }
-    } catch (e: Exception) {
-        Result.Error(e.message ?: "Unknown error occurred")
-    }
-}

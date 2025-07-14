@@ -1,5 +1,7 @@
 package com.example.notemark.main.data.remote.api
 
+import com.example.notemark.main.domain.model.CreateNoteRequest
+import com.example.notemark.main.domain.model.Note
 import com.example.notemark.main.domain.model.NotesResponse
 
 interface NoteService {
@@ -9,4 +11,7 @@ interface NoteService {
         size: Int,
     ): Result<NotesResponse>
 
+    suspend fun createNote(
+        body: CreateNoteRequest
+    ): Result<Note>
 }

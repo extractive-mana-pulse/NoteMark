@@ -1,5 +1,6 @@
 package com.example.notemark.auth.presentation.login.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -38,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -53,6 +55,7 @@ import com.example.notemark.auth.presentation.vm.AuthViewModel
 import com.example.notemark.core.components.NoteMarkButton
 import com.example.notemark.core.components.NoteMarkLink
 import com.example.notemark.core.components.NoteMarkTextField
+import com.example.notemark.core.manager.SessionManager
 import com.example.notemark.navigation.screens.AuthScreens
 import com.example.notemark.navigation.screens.HomeScreens
 import kotlinx.coroutines.launch
@@ -183,6 +186,8 @@ fun LoginSheet(
     snackbarHostState : SnackbarHostState
 ) {
 
+    val context = LocalContext.current
+    val sessionManager = SessionManager(context)
     val scope = rememberCoroutineScope()
     val loginViewModel: LoginViewModel = hiltViewModel()
     val authViewModel: AuthViewModel = hiltViewModel()
@@ -224,6 +229,10 @@ fun LoginSheet(
     val focusManager = LocalFocusManager.current
 
     isDisabled = email.isBlank() || password.isBlank() || !isValidEmail(email)
+    LaunchedEffect(Unit) {
+        Log.d("sessionManager login", "access token: ${sessionManager.getAccessToken()}")
+        Log.d("sessionManager login", "refresh token: ${sessionManager.getRefreshToken()}")
+    }
 
     Column(
         modifier = modifier

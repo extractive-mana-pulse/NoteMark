@@ -7,6 +7,7 @@ import com.example.notemark.auth.data.remote.repositoryImpl.LogoutServiceImpl
 import com.example.notemark.auth.data.remote.api.RegistrationService
 import com.example.notemark.auth.data.remote.repositoryImpl.LoginServiceImpl
 import com.example.notemark.auth.data.remote.repositoryImpl.RegistrationServiceImpl
+import com.example.notemark.auth.domain.UserDataValidator
 import com.example.notemark.core.manager.SessionManager
 import dagger.Module
 import dagger.Provides
@@ -36,4 +37,8 @@ object AuthModule {
     @Provides
     @Singleton
     fun provideLogoutService(client: HttpClient): LogoutService = LogoutServiceImpl(client)
+
+    @Provides
+    @Singleton
+    fun provideUserDataValidator(): UserDataValidator = UserDataValidator()
 }

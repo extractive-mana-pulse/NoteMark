@@ -2,6 +2,8 @@ package com.example.notemark.main.presentation.vm
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.notemark.main.domain.model.CreateNoteRequest
+import com.example.notemark.main.domain.model.Note
 import com.example.notemark.main.domain.model.NotesUiState
 import com.example.notemark.main.domain.repository.NotesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -70,4 +72,42 @@ class MainViewModel @Inject constructor(
             loadNotes()
         }
     }
+
+    private val _createNoteState = MutableStateFlow(CreateNoteUiState())
+    val createNoteState: StateFlow<CreateNoteUiState> = _createNoteState.asStateFlow()
+
+    fun createNote(noteRequest: CreateNoteRequest) {
+        viewModelScope.launch {
+            _createNoteState.value = _createNoteState.value.copy(isLoading = true, error = null)
+
+            val result = repository.createNote(noteRequest)
+
+            result.collect { result ->
+                result.fold(
+                    onSuccess = { data ->
+                        _createNoteState.value = _createNoteState.value.copy(
+                            isLoading = false,
+                            isSuccess = true,
+                            createdNote = data
+                        )
+                    },
+                    onFailure = { error ->
+                        _createNoteState.value = _createNoteState.value.copy(
+                            isLoading = false,
+                            error = error.message ?: "Unknown error occurred"
+                        )
+                    }
+                )
+            }
+        }
+    }
+
+    fun clearState() { _createNoteState.value = CreateNoteUiState() }
 }
+
+data class CreateNoteUiState(
+    val isLoading: Boolean = false,
+    val isSuccess: Boolean = false,
+    val createdNote: Note? = null,
+    val error: String? = null
+)

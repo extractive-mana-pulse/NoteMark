@@ -5,9 +5,9 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.toRoute
-import com.example.notemark.main.presentation.screens.CreateNoteScreen
-import com.example.notemark.main.presentation.screens.DetailsScreen
-import com.example.notemark.main.presentation.screens.HomeScreen
+import com.example.notemark.main.presentation.screens.note.CreateNoteScreen
+import com.example.notemark.main.presentation.screens.note.DetailsScreen
+import com.example.notemark.main.presentation.screens.note.HomeScreen
 import com.example.notemark.main.presentation.screens.ProfileScreen
 import com.example.notemark.main.presentation.screens.SettingsScreen
 import com.example.notemark.navigation.graphs.Graph

@@ -1,4 +1,4 @@
-package com.example.notemark.main.presentation.screens
+package com.example.notemark.main.presentation.screens.note
 
 import android.util.Log
 import android.widget.Toast
@@ -15,12 +15,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -59,7 +59,9 @@ import com.example.notemark.R
 import com.example.notemark.core.manager.SessionManager
 import com.example.notemark.main.domain.model.Note
 import com.example.notemark.main.domain.model.NotesUiState
+import com.example.notemark.main.domain.model.getFormattedCreatedAt
 import com.example.notemark.main.presentation.vm.MainViewModel
+import com.example.notemark.navigation.screens.AuthScreens
 import com.example.notemark.navigation.screens.HomeScreens
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,10 +73,29 @@ fun HomeScreen(
     val listState = rememberLazyListState()
     val viewModel: MainViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val sessionManager = SessionManager(context)
 
-    Log.d("HomeScreen", "Token: ${sessionManager.getAccessToken()}")
-    Log.d("HomeScreen", "Token: ${sessionManager.getRefreshToken()}")
+    val sessionManager = SessionManager(context)
+    val username = sessionManager.getUserName()
+    val accessToken = sessionManager.getAccessToken()
+    val refreshToken = sessionManager.getRefreshToken()
+
+    LaunchedEffect(
+        Unit
+    ) {
+        Log.d("HomeScreen", "Username: ${sessionManager.getUserName()}")
+        Log.d("HomeScreen", "Access Token: ${sessionManager.getAccessToken()}")
+        Log.d("HomeScreen", "Refresh Token: ${sessionManager.getRefreshToken()}")
+    }
+
+    LaunchedEffect(Unit) {
+        if (accessToken.isNullOrEmpty() && refreshToken.isNullOrEmpty()) {
+            navController.navigate(AuthScreens.LogIn.route) {
+                popUpTo(0) {
+                    inclusive
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -86,13 +107,6 @@ fun HomeScreen(
                     )
                 },
                 actions = {
-//                    Icon(
-//                        Icons.Default.Refresh,
-//                        contentDescription = "Refresh",
-//                        modifier = Modifier.clickable {
-//                            viewModel.refreshNotes()
-//                        }
-//                    )
                     Icon(
                         imageVector = ImageVector.vectorResource(R.drawable.settings),
                         contentDescription = "Settings",
@@ -115,9 +129,8 @@ fun HomeScreen(
                                     "This page is not available yet!",
                                     Toast.LENGTH_SHORT
                                 ).show()
-//                                navController.navigate(HomeScreens.Profile.route)
                             },
-                        text = "PL",
+                        text = "${username?.take(2)}",
                         style = MaterialTheme.typography.titleSmall.copy(
                             color = MaterialTheme.colorScheme.onPrimary,
                             textAlign = TextAlign.Center
@@ -162,7 +175,7 @@ fun HomeScreen(
                 .background(MaterialTheme.colorScheme.surface)
                 .padding(innerPadding)
         ) {
-            // Infinite scroll logic
+
             LaunchedEffect(listState) {
                 snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
                     .collect { lastVisibleIndex ->
@@ -180,12 +193,12 @@ fun HomeScreen(
                 Log.e("HomeScreen's:", "Error message: $error")
             }
 
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                state = rememberLazyGridState(),
+            LazyVerticalStaggeredGrid (
+                columns = StaggeredGridCells.Fixed(2),
+                state = rememberLazyStaggeredGridState(),
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalItemSpacing = 8.dp,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 itemsIndexed(uiState.notes) { index, note ->
@@ -196,9 +209,8 @@ fun HomeScreen(
                     )
                 }
 
-                // Loading indicator for pagination
                 if (uiState.isLoading && uiState.notes.isNotEmpty()) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
+                    item(span = StaggeredGridItemSpan.SingleLane ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -210,8 +222,6 @@ fun HomeScreen(
                     }
                 }
             }
-
-            // Initial loading indicator
             if (uiState.isLoading && uiState.notes.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -270,7 +280,7 @@ fun NoteItem(
     ) {
 
         Text(
-            text = note.createdAt ?: "01/01/2000",
+            text = note.getFormattedCreatedAt(),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.primary
         )
@@ -283,7 +293,7 @@ fun NoteItem(
         )
 
         Text(
-            text = note.content ?: "",
+            text = note.content,
             style = MaterialTheme.typography.bodySmall,
             maxLines = 3,
             overflow = TextOverflow.Ellipsis,
