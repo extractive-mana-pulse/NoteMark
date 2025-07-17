@@ -5,10 +5,21 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -21,6 +32,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,6 +41,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
@@ -39,11 +53,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.notemark.R
+import com.example.notemark.auth.presentation.util.DeviceConfiguration
 import com.example.notemark.main.DateFormatter
 import com.example.notemark.main.domain.model.CreateNoteRequest
+import com.example.notemark.main.presentation.vm.CreateNoteUiState
 import com.example.notemark.main.presentation.vm.MainViewModel
 import com.example.notemark.navigation.screens.HomeScreens
 import java.util.UUID
@@ -53,22 +70,62 @@ import java.util.UUID
 fun CreateNoteScreen(
     navController: NavHostController = rememberNavController(),
 ) {
-    val uuid = remember { UUID.randomUUID() }
+
+    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+    val deviceConfiguration = DeviceConfiguration.fromWindowSizeClass(windowSizeClass)
+
+    when(deviceConfiguration) {
+        DeviceConfiguration.MOBILE_PORTRAIT -> {
+            NoteCreationBody(
+                modifier = Modifier,
+                navController,
+            )
+        }
+        DeviceConfiguration.MOBILE_LANDSCAPE -> {
+            NoteCreationBody(
+                modifier = Modifier
+                    .background(
+                        MaterialTheme.colorScheme.onPrimary
+                    )
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.displayCutout)
+                    .consumeWindowInsets(WindowInsets.navigationBars),
+                navController,
+            )
+        }
+        DeviceConfiguration.TABLET_PORTRAIT,
+        DeviceConfiguration.TABLET_LANDSCAPE,
+        DeviceConfiguration.DESKTOP -> {
+            NoteCreationBody(
+                modifier = Modifier,
+                navController,
+            )
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun NoteCreationBody(
+    modifier: Modifier,
+    navController: NavHostController,
+) {
     val context = LocalContext.current
+    val uuid = remember { UUID.randomUUID() }
     val viewModel: MainViewModel = hiltViewModel()
-    var title by remember { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
     var content by remember { mutableStateOf("") }
-//    var isLoading by remember { mutableStateOf(false) }
+    var title by remember { mutableStateOf("") }
     val noteState by viewModel.createNoteState.collectAsStateWithLifecycle()
     val creationTime by remember { mutableStateOf(DateFormatter.getCurrentIsoString()) }
 
-
     LaunchedEffect(noteState) {
         if (noteState.isSuccess) {
-            navController.navigate(HomeScreens.Details(
-                noteId = uuid.toString()
-            )
-            )
+            navController.navigate(HomeScreens.Home.route) {
+                popUpTo(HomeScreens.Home.route) {
+                    inclusive = true
+                }
+            }
         }
     }
 
@@ -80,6 +137,10 @@ fun CreateNoteScreen(
                 "CreateNoteScreen: ${noteState.error}"
             )
         }
+    }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
     }
 
     Scaffold(
@@ -121,8 +182,7 @@ fun CreateNoteScreen(
                     ) {
                         if (noteState.isLoading) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                color = MaterialTheme.colorScheme.onPrimary
+                                modifier = Modifier.size(24.dp),
                             )
                         } else {
                             Text(
@@ -142,76 +202,78 @@ fun CreateNoteScreen(
                     containerColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
-        }
+        },
+        contentWindowInsets = WindowInsets.statusBars
     ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
+
+        Column(
+            modifier = modifier
                 .background(MaterialTheme.colorScheme.onPrimary)
-                .padding(innerPadding),
+                .fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
         ) {
-
-            noteState.error?.let { error ->
-                Text(
-                    text = error,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(16.dp).align(Alignment.Center)
-                )
-            }
-
-            Column {
-                TextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    placeholder = {
-                        Text(
-                            text = "Note Title",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+            TextField(
+                value = title,
+                onValueChange = { title = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
+                textStyle = MaterialTheme.typography.titleLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
+                placeholder = {
+                    Text(
+                        text = "Note title",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurface
                         )
-                    },
-                    textStyle = MaterialTheme.typography.titleLarge.copy(
-                        color = MaterialTheme.colorScheme.onSurface
-                    ),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.onPrimary,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.onPrimary,
-                        disabledContainerColor = MaterialTheme.colorScheme.onPrimary,
-                        focusedIndicatorColor = MaterialTheme.colorScheme.surface,
-                        unfocusedIndicatorColor = MaterialTheme.colorScheme.surface,
-                        disabledIndicatorColor = MaterialTheme.colorScheme.onPrimary,
                     )
+                },
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.onPrimary,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.onPrimary,
+                    focusedIndicatorColor = MaterialTheme.colorScheme.surface,
+                    unfocusedIndicatorColor = MaterialTheme.colorScheme.surface,
+                    disabledIndicatorColor = MaterialTheme.colorScheme.onPrimary,
                 )
+            )
 
-                TextField(
-                    value = content,
-                    onValueChange = { content = it },
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    placeholder = {
-                        Text(
-                            text = "Amet minim mollit non deserunt ullamco est sit aliqua dolor do amet sint.",
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+            TextField(
+                value = content,
+                onValueChange = { content = it },
+                modifier = Modifier
+                    .fillMaxSize(),
+                placeholder = {
+                    Text(
+                        text = "Amet minim mollit non deserunt ullamco est sit aliqua dolor do amet sint.",
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurface
                         )
-                    },
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(
-                        color = MaterialTheme.colorScheme.onSurface
-                    ),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.onPrimary,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.onPrimary,
-                        disabledContainerColor = MaterialTheme.colorScheme.onPrimary,
-                        focusedIndicatorColor = MaterialTheme.colorScheme.surface,
-                        unfocusedIndicatorColor = MaterialTheme.colorScheme.surface,
-                        disabledIndicatorColor = MaterialTheme.colorScheme.onPrimary,
                     )
+                },
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.onPrimary,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.onPrimary,
+                    focusedIndicatorColor = MaterialTheme.colorScheme.onPrimary,
+                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledIndicatorColor = MaterialTheme.colorScheme.onPrimary,
                 )
-            }
+            )
+            Spacer(modifier = Modifier.imePadding().weight(1f))
+        }
+        noteState.error?.let { error ->
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .padding(16.dp)
+            )
         }
     }
 }

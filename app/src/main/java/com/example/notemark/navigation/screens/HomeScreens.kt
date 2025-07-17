@@ -15,6 +15,11 @@ sealed class HomeScreens(val route: String) {
     object CreateNote : HomeScreens("create_note")
 
     @Serializable
+    data class EditNote(
+        val noteId: String
+    ): HomeScreens("edit_note")
+
+    @Serializable
     object Settings : HomeScreens("settings")
 
     @Serializable

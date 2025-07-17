@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class DetailsScreenViewModel : ViewModel() {
+class DetailsViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(DetailsScreenUiState())
     val uiState: StateFlow<DetailsScreenUiState> = _uiState.asStateFlow()

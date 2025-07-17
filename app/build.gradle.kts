@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.implementation
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -95,4 +97,16 @@ dependencies {
     ksp(libs.hilt.android.compiler)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
+
+    // paging
+    implementation(libs.androidx.paging.runtime.ktx)
+    implementation(libs.androidx.paging.compose)
+
+    // room
+    implementation (libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+    implementation (libs.androidx.room.paging)
+
+    // lottie files
+    implementation(libs.lottie.compose)
 }

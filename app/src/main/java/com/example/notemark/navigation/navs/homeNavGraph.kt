@@ -10,6 +10,7 @@ import com.example.notemark.main.presentation.screens.note.DetailsScreen
 import com.example.notemark.main.presentation.screens.note.HomeScreen
 import com.example.notemark.main.presentation.screens.ProfileScreen
 import com.example.notemark.main.presentation.screens.SettingsScreen
+import com.example.notemark.main.presentation.screens.note.EditNoteScreen
 import com.example.notemark.navigation.graphs.Graph
 import com.example.notemark.navigation.screens.HomeScreens
 
@@ -29,6 +30,13 @@ internal fun NavGraphBuilder.homeNavGraph(
         composable<HomeScreens.Details> {
             val argument = it.toRoute<HomeScreens.Details>()
             DetailsScreen(
+                navController = navController,
+                noteId = argument.noteId,
+            )
+        }
+        composable<HomeScreens.EditNote> {
+            val argument = it.toRoute<HomeScreens.EditNote>()
+            EditNoteScreen(
                 navController = navController,
                 noteId = argument.noteId,
             )

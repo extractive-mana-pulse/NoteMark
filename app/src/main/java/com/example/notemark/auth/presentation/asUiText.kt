@@ -1,5 +1,6 @@
 package com.example.notemark.auth.presentation
 
+import androidx.annotation.StringRes
 import com.example.notemark.R
 import com.example.notemark.auth.domain.DataError
 import com.example.notemark.auth.domain.Result
@@ -33,6 +34,10 @@ fun DataError.asUiText(): UiText {
 
         DataError.ValidationErrors.INVALID_FORMAT -> StringResource(
             R.string.invalid_format
+        )
+
+        DataError.Note.NOTE_IS_NOT_DELETED ->  StringResource(
+            R.string.note_is_not_deleted
         )
     }
 }

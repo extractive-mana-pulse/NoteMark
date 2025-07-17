@@ -17,11 +17,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,19 +37,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,11 +60,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.notemark.R
+import com.example.notemark.auth.presentation.util.DeviceConfiguration
 import com.example.notemark.main.domain.model.Note
 import com.example.notemark.main.domain.model.getFormattedCreatedAt
 import com.example.notemark.main.domain.model.getFormattedUpdatedAt
 import com.example.notemark.main.presentation.vm.DetailsScreenUiState
-import com.example.notemark.main.presentation.vm.DetailsScreenViewModel
+import com.example.notemark.main.presentation.vm.DetailsViewModel
 import com.example.notemark.main.presentation.vm.MainViewModel
 import com.example.notemark.navigation.screens.HomeScreens
 
@@ -73,14 +79,11 @@ fun DetailsScreen(
     val context = LocalContext.current
     val activity = context as Activity
     val scrollState = rememberScrollState()
-    val viewModel: DetailsScreenViewModel = viewModel()
-    var isReaderMode by remember { mutableStateOf(false) }
+    val viewModel: DetailsViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val mainViewModel: MainViewModel = hiltViewModel()
     val mainState by mainViewModel.uiState.collectAsStateWithLifecycle()
-
-    // Find the note by ID
     val note = mainState.notes.find { it.id == noteId }
 
     LaunchedEffect(uiState.requestedOrientation) {
@@ -94,11 +97,6 @@ fun DetailsScreen(
         viewModel.setOriginalOrientation(activity.requestedOrientation)
     }
 
-    // Sync local state with viewModel state
-    LaunchedEffect(uiState.isReaderMode) {
-        isReaderMode = uiState.isReaderMode
-    }
-
     BackHandler(enabled = uiState.isReaderMode) {
         viewModel.toggleReaderMode()
     }
@@ -109,88 +107,273 @@ fun DetailsScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            AnimatedVisibility(
-                visible = !uiState.isReaderMode || uiState.isUiVisible,
-                enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
-                    animationSpec = tween(300)
-                ) { -it },
-                exit = fadeOut(animationSpec = tween(300)) + slideOutVertically(
-                    animationSpec = tween(300)
-                ) { -it }
-            ) {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = "all notes".uppercase(),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 16.sp,
-                            lineHeight = 24.sp,
-                            letterSpacing = 1.0.sp,
-                            fontFamily = FontFamily(Font(R.font.space_grotesk_regular)),
-                            modifier = Modifier.clickable {
-                                if (uiState.isReaderMode) navController.popBackStack()
+    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+    val deviceConfiguration = DeviceConfiguration.fromWindowSizeClass(windowSizeClass)
+
+    when(deviceConfiguration) {
+        DeviceConfiguration.MOBILE_PORTRAIT -> {
+            Scaffold(
+                topBar = {
+                    AnimatedVisibility(
+                        visible = !uiState.isReaderMode || uiState.isUiVisible,
+                        enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
+                            animationSpec = tween(300)
+                        ) { -it },
+                        exit = fadeOut(animationSpec = tween(300)) + slideOutVertically(
+                            animationSpec = tween(300)
+                        ) { -it }
+                    ) {
+                        TopAppBar(
+                            title = {
+                                Text(
+                                    text = "all notes".uppercase(),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 16.sp,
+                                    lineHeight = 24.sp,
+                                    letterSpacing = 1.0.sp,
+                                    fontFamily = FontFamily(Font(R.font.space_grotesk_regular)),
+                                )
+                            },
+                            navigationIcon = {
+                                IconButton(
+                                    onClick = {
+                                        if (uiState.isReaderMode) viewModel.toggleReaderMode() else navController.popBackStack()
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = ImageVector.vectorResource(R.drawable.ios_arrow_left),
+                                        contentDescription = "Navigate up",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         )
-                    },
-                    navigationIcon = {
-                        IconButton(
-                            onClick = { navController.popBackStack() }
-                        ) {
-                            Icon(
-                                imageVector = ImageVector.vectorResource(R.drawable.ios_arrow_left),
-                                contentDescription = "Navigate up",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
                     }
-                )
+                }
+            ) { innerPadding ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.onPrimary)
+                        .padding(
+                            if (!uiState.isReaderMode || uiState.isUiVisible) innerPadding else PaddingValues(
+                                0.dp
+                            )
+                        )
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {
+                            viewModel.onScreenTap()
+                        },
+                ) {
+                    DetailsBody(
+                        scrollState = scrollState,
+                        uiState = uiState,
+                        note = note,
+                        noteId = noteId ?: ""
+                    )
+
+                    AnimatedVisibility(
+                        visible = !uiState.isReaderMode || uiState.isUiVisible,
+                        enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
+                            animationSpec = tween(300)
+                        ) { it },
+                        exit = fadeOut(animationSpec = tween(300)) + slideOutVertically(
+                            animationSpec = tween(300)
+                        ) { it },
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    ) {
+                        ExtendedFabFSheet(
+                            onEditClick = {
+                                navController.navigate(
+                                    HomeScreens.EditNote(
+                                        noteId = noteId ?: ""
+                                    )
+                                )
+                            },
+                            onReaderModeClick = { viewModel.toggleReaderMode() },
+                            isReaderMode = uiState.isReaderMode
+                        )
+                    }
+                }
             }
         }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.onPrimary)
-                .padding(
-                    if (!uiState.isReaderMode || uiState.isUiVisible) innerPadding else PaddingValues(
-                        0.dp
-                    )
-                )
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) {
-                    viewModel.onScreenTap()
-                },
-        ) {
-            DetailsBody(
-                scrollState = scrollState,
-                uiState = uiState,
-                note = note,
-                noteId = noteId ?: ""
-            )
+        DeviceConfiguration.MOBILE_LANDSCAPE -> {
 
-            AnimatedVisibility(
-                visible = !uiState.isReaderMode || uiState.isUiVisible,
-                enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
-                    animationSpec = tween(300)
-                ) { it },
-                exit = fadeOut(animationSpec = tween(300)) + slideOutVertically(
-                    animationSpec = tween(300)
-                ) { it },
-                modifier = Modifier.align(Alignment.BottomCenter)
-            ) {
-                ExtendedFabFSheet(
-                    onEditClick = {
-                        navController.navigate(HomeScreens.Details(
-                            noteId = noteId ?: ""
-                        ))
-                    },
-                    onReaderModeClick = { viewModel.toggleReaderMode() },
-                    isReaderMode = uiState.isReaderMode // Use state from viewModel
-                )
+            Scaffold(
+                topBar = {
+                    AnimatedVisibility(
+                        visible = !uiState.isReaderMode || uiState.isUiVisible,
+                        enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
+                            animationSpec = tween(300)
+                        ) { -it },
+                        exit = fadeOut(animationSpec = tween(300)) + slideOutVertically(
+                            animationSpec = tween(300)
+                        ) { -it }
+                    ) {
+                        TopAppBar(
+                            title = {
+                                Text(
+                                    text = "all notes".uppercase(),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 16.sp,
+                                    lineHeight = 24.sp,
+                                    letterSpacing = 1.0.sp,
+                                    fontFamily = FontFamily(Font(R.font.space_grotesk_regular)),
+                                )
+                            },
+                            navigationIcon = {
+                                IconButton(
+                                    onClick = {
+                                        if (uiState.isReaderMode) viewModel.toggleReaderMode() else navController.popBackStack()
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = ImageVector.vectorResource(R.drawable.ios_arrow_left),
+                                        contentDescription = "Navigate up",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
+            ) { innerPadding ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.onPrimary)
+                        .windowInsetsPadding(WindowInsets.displayCutout)
+                        .consumeWindowInsets(WindowInsets.navigationBars)
+                        .padding(if (!uiState.isReaderMode || uiState.isUiVisible) innerPadding else PaddingValues(0.dp))
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {
+                            viewModel.onScreenTap()
+                        },
+                ) {
+                    DetailsBody(
+                        scrollState = scrollState,
+                        uiState = uiState,
+                        note = note,
+                        noteId = noteId ?: ""
+                    )
+
+                    AnimatedVisibility(
+                        visible = !uiState.isReaderMode || uiState.isUiVisible,
+                        enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
+                            animationSpec = tween(300)
+                        ) { it },
+                        exit = fadeOut(animationSpec = tween(300)) + slideOutVertically(
+                            animationSpec = tween(300)
+                        ) { it },
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    ) {
+                        ExtendedFabFSheet(
+                            onEditClick = {
+                                navController.navigate(
+                                    HomeScreens.EditNote(
+                                        noteId = noteId ?: ""
+                                    )
+                                )
+                            },
+                            onReaderModeClick = { viewModel.toggleReaderMode() },
+                            isReaderMode = uiState.isReaderMode
+                        )
+                    }
+                }
+            }
+        }
+        DeviceConfiguration.TABLET_PORTRAIT,
+        DeviceConfiguration.TABLET_LANDSCAPE,
+        DeviceConfiguration.DESKTOP -> {
+            Scaffold(
+                topBar = {
+                    AnimatedVisibility(
+                        visible = !uiState.isReaderMode || uiState.isUiVisible,
+                        enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
+                            animationSpec = tween(300)
+                        ) { -it },
+                        exit = fadeOut(animationSpec = tween(300)) + slideOutVertically(
+                            animationSpec = tween(300)
+                        ) { -it }
+                    ) {
+                        TopAppBar(
+                            title = {
+                                Text(
+                                    text = "all notes".uppercase(),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 16.sp,
+                                    lineHeight = 24.sp,
+                                    letterSpacing = 1.0.sp,
+                                    fontFamily = FontFamily(Font(R.font.space_grotesk_regular)),
+                                )
+                            },
+                            navigationIcon = {
+                                IconButton(
+                                    onClick = {
+                                        if (uiState.isReaderMode) viewModel.toggleReaderMode() else navController.popBackStack()
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = ImageVector.vectorResource(R.drawable.ios_arrow_left),
+                                        contentDescription = "Navigate up",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
+            ) { innerPadding ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.onPrimary)
+                        .padding(
+                            if (!uiState.isReaderMode || uiState.isUiVisible) innerPadding else PaddingValues(
+                                0.dp
+                            )
+                        )
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) {
+                            viewModel.onScreenTap()
+                        },
+                ) {
+                    DetailsBody(
+                        scrollState = scrollState,
+                        uiState = uiState,
+                        note = note,
+                        noteId = noteId ?: ""
+                    )
+
+                    AnimatedVisibility(
+                        visible = !uiState.isReaderMode || uiState.isUiVisible,
+                        enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
+                            animationSpec = tween(300)
+                        ) { it },
+                        exit = fadeOut(animationSpec = tween(300)) + slideOutVertically(
+                            animationSpec = tween(300)
+                        ) { it },
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    ) {
+                        ExtendedFabFSheet(
+                            onEditClick = {
+                                navController.navigate(
+                                    HomeScreens.EditNote(
+                                        noteId = noteId ?: ""
+                                    )
+                                )
+                            },
+                            onReaderModeClick = { viewModel.toggleReaderMode() },
+                            isReaderMode = uiState.isReaderMode
+                        )
+                    }
+                }
             }
         }
     }
@@ -237,7 +420,8 @@ private fun DetailsBody(
                     Text(
                         text = note.getFormattedCreatedAt(),
                         style = MaterialTheme.typography.titleSmall.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold
                         )
                     )
                 }
@@ -254,7 +438,8 @@ private fun DetailsBody(
                     Text(
                         text = note.getFormattedUpdatedAt(),
                         style = MaterialTheme.typography.titleSmall.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold
                         )
                     )
                 }
@@ -263,7 +448,7 @@ private fun DetailsBody(
             HorizontalDivider()
 
             Text(
-                text = note.content, // Use actual content from note
+                text = note.content,
                 style = MaterialTheme.typography.bodyLarge.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
@@ -302,7 +487,7 @@ internal fun ExtendedFabFSheet(
                 MaterialTheme.colorScheme.surface,
                 shape = MaterialTheme.shapes.medium
             ),
-        verticalAlignment = Alignment.CenterVertically, // Changed from Bottom to CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
         IconButton(
@@ -310,7 +495,7 @@ internal fun ExtendedFabFSheet(
         ) {
             Icon(
                 imageVector = ImageVector.vectorResource(R.drawable.edit),
-                contentDescription = "Edit note"
+                contentDescription = null
             )
         }
 
@@ -319,9 +504,11 @@ internal fun ExtendedFabFSheet(
             modifier = Modifier
                 .then(
                     if (isReaderMode) {
-                        Modifier.background(
-                            MaterialTheme.colorScheme.primaryContainer,
-                            shape = CircleShape
+                        Modifier
+                            .padding(4.dp)
+                            .background(
+                            color = Color(0x1A5977F7),
+                            shape = MaterialTheme.shapes.medium
                         )
                     } else {
                         Modifier
@@ -330,12 +517,8 @@ internal fun ExtendedFabFSheet(
         ) {
             Icon(
                 imageVector = ImageVector.vectorResource(R.drawable.book_open),
-                contentDescription = "Toggle reader mode",
-                tint = if (isReaderMode) {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                } else {
-                    LocalContentColor.current
-                }
+                contentDescription = null,
+                tint = if (isReaderMode) MaterialTheme.colorScheme.primary else LocalContentColor.current
             )
         }
     }

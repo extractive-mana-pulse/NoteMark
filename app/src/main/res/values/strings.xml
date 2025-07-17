@@ -7,4 +7,5 @@
     <string name="unknown_error">Unknown error, please reach the support center.</string>
     <string name="disk_full">Disk full, please clean the cache.</string>
     <string name="invalid_format">Invalid email</string>
+    <string name="note_is_not_deleted">For some reason note is not deleted, please try again or contact support!</string>
 </resources>

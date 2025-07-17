@@ -18,5 +18,8 @@ sealed interface DataError: Error {
         INVALID_FORMAT
     }
 
+    enum class Note: DataError {
+        NOTE_IS_NOT_DELETED
+    }
     // here we can past all errors from our app
 }

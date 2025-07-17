@@ -32,18 +32,14 @@ class RegistrationViewModel @Inject constructor(
                 val result = registrationService.register(registrationModel)
                 if (result != null) {
                     _registrationState.value = RegistrationState.Success(result)
-                    println("User registered: ${result.username}")
                 } else {
                     _registrationState.value = RegistrationState.Error("Registration failed")
-                    println("Registration failed")
                 }
             } catch (e: Exception) {
                 _registrationState.value = RegistrationState.Error(e.message ?: "Unknown error")
-                println("Registration error: ${e.message}")
             }
         }
     }
-
     fun clearState() {
         _registrationState.value = RegistrationState.Idle
     }

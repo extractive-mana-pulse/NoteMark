@@ -23,4 +23,16 @@ class NotesRepository(
     ) : Flow<Result<Note>> = flow {
         emit(api.createNote(body))
     }
+
+//    fun updateNote(
+//        id: String,
+//        body: CreateNoteRequest
+//    ) : Flow<Result<Note>> = flow {
+//        emit(api.updateNote(id, body))
+//    }
+
+
+    suspend fun deleteNote(noteId: String): Result<Unit> {
+        return api.deleteNote(noteId)
+    }
 }

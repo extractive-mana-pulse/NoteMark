@@ -250,7 +250,6 @@ private fun SettingsItem(
             .height(56.dp)
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .clickable {
-                // Only trigger logout if not already loading
                 if (logoutState !is LogoutState.Loading) {
                     authViewModel.signOut()
                     loginViewModel.logoutUser()

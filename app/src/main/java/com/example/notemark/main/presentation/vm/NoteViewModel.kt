@@ -63,10 +63,6 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun refreshNotes() {
-        loadNotes(refresh = true)
-    }
-
     fun loadNextPage() {
         if (!_uiState.value.isLoading && _uiState.value.hasNextPage) {
             loadNotes()
@@ -94,7 +90,7 @@ class MainViewModel @Inject constructor(
                     onFailure = { error ->
                         _createNoteState.value = _createNoteState.value.copy(
                             isLoading = false,
-                            error = error.message ?: "Unknown error occurred"
+                            error = error.message ?: "Unknown error occurred while creating error."
                         )
                     }
                 )
@@ -102,7 +98,41 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun clearState() { _createNoteState.value = CreateNoteUiState() }
+    private val _deleteNoteState = MutableStateFlow<DeleteNoteUiState>(DeleteNoteUiState.Idle)
+    val deleteNoteState: StateFlow<DeleteNoteUiState> = _deleteNoteState.asStateFlow()
+
+    fun deleteNote(noteId: String) {
+        viewModelScope.launch {
+            _deleteNoteState.value = DeleteNoteUiState.Loading
+
+            try {
+                val result = repository.deleteNote(noteId)
+                result.fold(
+                    onSuccess = {
+                        _deleteNoteState.value = DeleteNoteUiState.Success
+                        val currentNotes = _uiState.value.notes.toMutableList()
+                        currentNotes.removeAll { it.id == noteId }
+                        _uiState.value = _uiState.value.copy(
+                            notes = currentNotes,
+                            isLoading = false,
+                            error = null,
+                        )},
+                    onFailure = { error ->
+                        _deleteNoteState.value = DeleteNoteUiState.Error(error.message ?: "Unknown error occurred")
+                    }
+                )
+            } catch (e: Exception) {
+                _deleteNoteState.value = DeleteNoteUiState.Error(e.message ?: "Unknown error occurred")
+            }
+        }
+    }
+    fun resetDeleteState() { _deleteNoteState.value = DeleteNoteUiState.Idle }
+}
+sealed class DeleteNoteUiState {
+    object Idle : DeleteNoteUiState()
+    object Loading : DeleteNoteUiState()
+    object Success : DeleteNoteUiState()
+    data class Error(val message: String) : DeleteNoteUiState()
 }
 
 data class CreateNoteUiState(
