@@ -2,72 +2,37 @@ package com.example.notemark.main.presentation.vm
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.cachedIn
+import androidx.paging.map
+import com.example.notemark.main.data.local.NoteEntity
+import com.example.notemark.main.data.remote.NoteDTO
+import com.example.notemark.main.data.remote.toNote
 import com.example.notemark.main.domain.model.CreateNoteRequest
-import com.example.notemark.main.domain.model.Note
-import com.example.notemark.main.domain.model.NotesUiState
 import com.example.notemark.main.domain.repository.NotesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class MainViewModel @Inject constructor(
-    private val repository: NotesRepository
+class NotesViewModel @Inject constructor(
+    private val repository: NotesRepository,
+    pager: Pager<Int, NoteEntity>
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(NotesUiState())
-    val uiState: StateFlow<NotesUiState> = _uiState.asStateFlow()
-
-    private val pageSize = 10
-
-    init {
-        loadNotes()
-    }
-
-    fun loadNotes(
-        refresh: Boolean = false
-    ) {
-        viewModelScope.launch {
-            val currentState = _uiState.value
-            val page = if (refresh) 0 else currentState.currentPage
-
-            _uiState.value = currentState.copy(isLoading = true, error = null)
-
-            repository.getNotes(page, pageSize).collect { result ->
-                result.fold(
-                    onSuccess = { response ->
-                        val newNotes = if (refresh) {
-                            response.notes
-                        } else {
-                            currentState.notes + response.notes
-                        }
-
-                        _uiState.value = NotesUiState(
-                            notes = newNotes,
-                            isLoading = false,
-                            currentPage = page + 1,
-                            hasNextPage = response.notes.size == pageSize
-                        )
-                    },
-                    onFailure = { exception ->
-                        _uiState.value = currentState.copy(
-                            isLoading = false,
-                            error = exception.message ?: "Unknown error occurred"
-                        )
-                    }
-                )
+    val notePagingFlow = pager
+        .flow
+        .map { pagingData ->
+            pagingData.map {
+                it.toNote()
             }
         }
-    }
+        .cachedIn(viewModelScope)
 
-    fun loadNextPage() {
-        if (!_uiState.value.isLoading && _uiState.value.hasNextPage) {
-            loadNotes()
-        }
-    }
 
     private val _createNoteState = MutableStateFlow(CreateNoteUiState())
     val createNoteState: StateFlow<CreateNoteUiState> = _createNoteState.asStateFlow()
@@ -97,7 +62,6 @@ class MainViewModel @Inject constructor(
             }
         }
     }
-
     private val _deleteNoteState = MutableStateFlow<DeleteNoteUiState>(DeleteNoteUiState.Idle)
     val deleteNoteState: StateFlow<DeleteNoteUiState> = _deleteNoteState.asStateFlow()
 
@@ -110,13 +74,8 @@ class MainViewModel @Inject constructor(
                 result.fold(
                     onSuccess = {
                         _deleteNoteState.value = DeleteNoteUiState.Success
-                        val currentNotes = _uiState.value.notes.toMutableList()
-                        currentNotes.removeAll { it.id == noteId }
-                        _uiState.value = _uiState.value.copy(
-                            notes = currentNotes,
-                            isLoading = false,
-                            error = null,
-                        )},
+
+                    },
                     onFailure = { error ->
                         _deleteNoteState.value = DeleteNoteUiState.Error(error.message ?: "Unknown error occurred")
                     }
@@ -138,6 +97,6 @@ sealed class DeleteNoteUiState {
 data class CreateNoteUiState(
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
-    val createdNote: Note? = null,
+    val createdNote: NoteDTO? = null,
     val error: String? = null
 )

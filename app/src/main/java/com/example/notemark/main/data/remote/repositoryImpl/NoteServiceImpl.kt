@@ -2,16 +2,15 @@ package com.example.notemark.main.data.remote.repositoryImpl
 
 import com.example.notemark.core.HttpRoutes
 import com.example.notemark.core.manager.SessionManager
+import com.example.notemark.main.data.remote.NoteDTO
 import com.example.notemark.main.data.remote.api.NoteService
 import com.example.notemark.main.domain.model.CreateNoteRequest
-import com.example.notemark.main.domain.model.Note
 import com.example.notemark.main.domain.model.NotesResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
-import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
@@ -23,25 +22,22 @@ class NoteServiceImpl(
     private val sessionManager: SessionManager
 ): NoteService {
 
-    override suspend fun getNotes(page: Int, size: Int): Result<NotesResponse> {
+    override suspend fun getNotes(page: Int, size: Int): NotesResponse {
         return try {
             val accessToken = sessionManager.getAccessToken()
-            val response = client.get(
-                HttpRoutes.NOTES
-            ) {
-                parameter("page", page)
-                parameter("size", size)
+
+            val response = client.get(HttpRoutes.NOTES) {
                 contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer $accessToken")
                 header("X-User-Email", HttpRoutes.EMAIL)
             }
-            Result.success(response.body<NotesResponse>())
+            response.body<NotesResponse>()
         } catch (e: Exception) {
-            Result.failure(e)
+            throw e
         }
     }
 
-    override suspend fun createNote(body: CreateNoteRequest): Result<Note> {
+    override suspend fun createNote(body: CreateNoteRequest): Result<NoteDTO> {
         return try {
             val accessToken = sessionManager.getAccessToken()
             val response = client.post(
@@ -52,7 +48,7 @@ class NoteServiceImpl(
                 header("Authorization", "Bearer $accessToken")
                 header("X-User-Email", HttpRoutes.EMAIL)
             }
-            Result.success(response.body<Note>())
+            Result.success(response.body<NoteDTO>())
         } catch (e: Exception) {
             Result.failure(e)
         }

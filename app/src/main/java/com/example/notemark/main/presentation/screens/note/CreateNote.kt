@@ -3,7 +3,6 @@ package com.example.notemark.main.presentation.screens.note
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -39,7 +37,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -53,15 +50,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.notemark.R
 import com.example.notemark.auth.presentation.util.DeviceConfiguration
 import com.example.notemark.main.DateFormatter
 import com.example.notemark.main.domain.model.CreateNoteRequest
-import com.example.notemark.main.presentation.vm.CreateNoteUiState
-import com.example.notemark.main.presentation.vm.MainViewModel
+import com.example.notemark.main.presentation.vm.NotesViewModel
 import com.example.notemark.navigation.screens.HomeScreens
 import java.util.UUID
 
@@ -112,7 +107,7 @@ private fun NoteCreationBody(
 ) {
     val context = LocalContext.current
     val uuid = remember { UUID.randomUUID() }
-    val viewModel: MainViewModel = hiltViewModel()
+    val viewModel: NotesViewModel = hiltViewModel()
     val focusRequester = remember { FocusRequester() }
     var content by remember { mutableStateOf("") }
     var title by remember { mutableStateOf("") }

@@ -1,14 +1,7 @@
 package com.example.notemark.main.presentation.screens.note
 
-import android.content.Context
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -28,18 +21,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -62,7 +50,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -81,19 +68,21 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieAnimatable
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.notemark.R
 import com.example.notemark.auth.presentation.util.DeviceConfiguration
 import com.example.notemark.core.manager.SessionManager
 import com.example.notemark.main.domain.model.Note
-import com.example.notemark.main.domain.model.NotesUiState
 import com.example.notemark.main.domain.model.getFormattedCreatedAt
 import com.example.notemark.main.presentation.vm.DeleteNoteUiState
-import com.example.notemark.main.presentation.vm.MainViewModel
+import com.example.notemark.main.presentation.vm.NotesViewModel
 import com.example.notemark.navigation.screens.AuthScreens
 import com.example.notemark.navigation.screens.HomeScreens
 import kotlinx.coroutines.delay
@@ -104,9 +93,8 @@ fun HomeScreen(
     navController: NavHostController = rememberNavController()
 ) {
     val context = LocalContext.current
-    val listState = rememberLazyListState()
-    val viewModel: MainViewModel = hiltViewModel()
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val viewModel: NotesViewModel = hiltViewModel()
+    val notesList = viewModel.notePagingFlow.collectAsLazyPagingItems()
 
     val sessionManager = SessionManager(context)
     val username = sessionManager.getUserName()
@@ -130,6 +118,7 @@ fun HomeScreen(
             }
         }
     }
+
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val deviceConfiguration = DeviceConfiguration.fromWindowSizeClass(windowSizeClass)
 
@@ -137,12 +126,10 @@ fun HomeScreen(
         DeviceConfiguration.MOBILE_PORTRAIT -> {
             MainContent(
                 modifier = Modifier,
-                navController,
-                context,
-                username,
-                listState,
-                uiState,
-                viewModel
+                navController = navController,
+                username = username,
+                viewModel = viewModel,
+                notes = notesList
             )
         }
         DeviceConfiguration.MOBILE_LANDSCAPE -> {
@@ -154,12 +141,10 @@ fun HomeScreen(
                     .windowInsetsPadding(WindowInsets.displayCutout)
                     .fillMaxSize()
                     .consumeWindowInsets(WindowInsets.navigationBars),
-                navController,
-                context,
-                username,
-                listState,
-                uiState,
-                viewModel
+                navController = navController,
+                username = username,
+                viewModel = viewModel,
+                notes = notesList
             )
         }
         DeviceConfiguration.TABLET_PORTRAIT,
@@ -167,29 +152,46 @@ fun HomeScreen(
         DeviceConfiguration.DESKTOP -> {
             MainContent(
                 modifier = Modifier,
-                navController,
-                context,
-                username,
-                listState,
-                uiState,
-                viewModel
+                navController = navController,
+                username = username,
+                viewModel = viewModel,
+                notes = notesList
             )
         }
     }
 
 }
 
-@Composable
 @OptIn(ExperimentalMaterial3Api::class)
+@Composable
 private fun MainContent(
     modifier: Modifier,
     navController: NavHostController,
-    context: Context,
     username: String?,
-    listState: LazyListState,
-    uiState: NotesUiState,
-    viewModel: MainViewModel
+    viewModel: NotesViewModel,
+    notes: LazyPagingItems<Note>
 ) {
+    val context = LocalContext.current
+    LaunchedEffect(notes.loadState) {
+        when {
+            notes.loadState.refresh is LoadState.Error -> {
+                val error = (notes.loadState.refresh as LoadState.Error).error
+                Log.e("Home", "Refresh error: ${error.message}")
+                if (notes.itemCount == 0) {
+                    Toast.makeText(
+                        context,
+                        "Unable to load notes. Showing cached data.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+            notes.loadState.append is LoadState.Error -> {
+                val error = (notes.loadState.append as LoadState.Error).error
+                Log.e("Home", "Append error: ${error.message}")
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -269,72 +271,52 @@ private fun MainContent(
                 .background(MaterialTheme.colorScheme.surface)
                 .padding(innerPadding)
         ) {
-
-            LaunchedEffect(listState) {
-                snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
-                    .collect { lastVisibleIndex ->
-                        if (lastVisibleIndex != null &&
-                            lastVisibleIndex >= uiState.notes.size - 3 &&
-                            !uiState.isLoading &&
-                            uiState.hasNextPage
-                        ) {
-                            viewModel.loadNextPage()
+            if (
+                notes.loadState.refresh is LoadState.Loading
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp).align(Alignment.CenterHorizontally)
+                )
+            } else {
+                LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Fixed(2),
+                    state = rememberLazyStaggeredGridState(),
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalItemSpacing = 8.dp,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    content = {
+                        items(
+                            notes.itemCount,
+                            key = notes.itemKey { it.id }
+                        ) { index ->
+                            notes[index]?.let {
+                                NoteItem(
+                                    modifier = Modifier,
+                                    navController = navController,
+                                    note = it,
+                                    viewModel = viewModel,
+                                    notes = notes
+                                )
+                            }
                         }
                     }
-            }
-
-            uiState.error?.let { error ->
-                Toast.makeText(context, "Error message: $error", Toast.LENGTH_SHORT).show()
-                Log.e("HomeScreen's:", "Error message: $error")
-            }
-
-            LazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(2),
-                state = rememberLazyStaggeredGridState(),
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(16.dp),
-                verticalItemSpacing = 8.dp,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                itemsIndexed(uiState.notes) { index, note ->
-                    NoteItem(
-                        navController = navController,
-                        note = note,
-                        modifier = Modifier,
-                        viewModel = viewModel
+                )
+                if (notes.loadState.append is LoadState.Loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp).align(Alignment.CenterHorizontally)
                     )
                 }
-
-                if (uiState.isLoading && uiState.notes.isNotEmpty()) {
-                    item(span = StaggeredGridItemSpan.SingleLane) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    }
-                }
             }
-            if (uiState.isLoading && uiState.notes.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-
-            EmptyState(uiState)
+            EmptyState(notes)
         }
     }
 }
 
 @Composable
-private fun EmptyState(uiState: NotesUiState) {
-    if (!uiState.isLoading && uiState.notes.isEmpty() && uiState.error == null) {
+private fun EmptyState(notes: LazyPagingItems<Note>) {
+
+    if (notes.loadState.refresh !is LoadState.Loading && notes.itemSnapshotList.items.isEmpty() && !notes.loadState.hasError) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -358,7 +340,8 @@ fun NoteItem(
     modifier: Modifier,
     navController: NavHostController = rememberNavController(),
     note: Note,
-    viewModel: MainViewModel
+    viewModel: NotesViewModel,
+    notes: LazyPagingItems<Note>
 ) {
 
     var contextMenuNoteId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -413,7 +396,8 @@ fun NoteItem(
             isVisible = note.id == contextMenuNoteId,
             onDismissSheet = { contextMenuNoteId = null },
             viewModel = viewModel,
-            noteId = note.id
+            noteId = contextMenuNoteId ?: "",
+            notes = notes
         )
     }
 }
@@ -423,8 +407,9 @@ fun NoteItem(
 fun NoteActionSheet(
     isVisible: Boolean,
     onDismissSheet: () -> Unit,
-    viewModel: MainViewModel,
-    noteId: String
+    viewModel: NotesViewModel,
+    noteId: String,
+    notes: LazyPagingItems<Note>
 ) {
     val context = LocalContext.current
     val deleteNoteState by viewModel.deleteNoteState.collectAsStateWithLifecycle()
@@ -433,6 +418,8 @@ fun NoteActionSheet(
     LaunchedEffect(deleteNoteState) {
         when (deleteNoteState) {
             is DeleteNoteUiState.Success -> {
+                delay(2_000L)
+                notes.refresh()
                 viewModel.resetDeleteState()
                 onDismissSheet()
             }
@@ -464,7 +451,7 @@ fun NoteActionSheet(
             ) {
                 ActionContent(
                     deleteNoteState = deleteNoteState,
-                    onDeleteClick = onDeleteClick
+                    onDeleteClick = onDeleteClick,
                 )
             }
         }
@@ -481,6 +468,16 @@ private fun SuccessContent() {
     ) {
         val animationState = rememberLottieAnimatable()
         val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.success))
+
+
+        LaunchedEffect(composition) {
+            composition?.let {
+                animationState.animate(
+                    composition = it,
+                    iterations = 1
+                )
+            }
+        }
 
         Box(
             modifier = Modifier.size(120.dp),
@@ -522,7 +519,7 @@ private fun SuccessContent() {
 @Composable
 private fun ActionContent(
     deleteNoteState: DeleteNoteUiState,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),

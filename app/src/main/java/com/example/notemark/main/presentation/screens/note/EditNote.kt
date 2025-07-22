@@ -49,11 +49,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.notemark.R
 import com.example.notemark.auth.presentation.util.DeviceConfiguration
 import com.example.notemark.main.DateFormatter
 import com.example.notemark.main.domain.model.CreateNoteRequest
-import com.example.notemark.main.presentation.vm.MainViewModel
+import com.example.notemark.main.presentation.vm.NotesViewModel
 import com.example.notemark.navigation.screens.HomeScreens
 import java.util.UUID
 
@@ -110,13 +111,13 @@ private fun EditNoteScreenBody(
 
     val context = LocalContext.current
     val uuid = remember { UUID.randomUUID() }
-    val viewModel: MainViewModel = hiltViewModel()
+    val viewModel: NotesViewModel = hiltViewModel()
     val noteState by viewModel.createNoteState.collectAsStateWithLifecycle()
     val creationTime by remember { mutableStateOf(DateFormatter.getCurrentIsoString()) }
 
-    val mainViewModel: MainViewModel = hiltViewModel()
-    val mainState by mainViewModel.uiState.collectAsStateWithLifecycle()
-    val note = mainState.notes.find { it.id == noteId }
+    val notesViewModel: NotesViewModel = hiltViewModel()
+    val notes = notesViewModel.notePagingFlow.collectAsLazyPagingItems()
+    val note = notes.itemSnapshotList.items.find { it.id.toString() == noteId }
 
     LaunchedEffect(noteState) {
         if (noteState.isSuccess) {
@@ -138,7 +139,7 @@ private fun EditNoteScreenBody(
         }
     }
 
-    if (note != null && note.id == noteId) {
+    if (note != null && note.id.toString() == noteId) {
         var title by remember { mutableStateOf(note.title) }
         var content by remember { mutableStateOf(note.content) }
         var showExitDialog by remember { mutableStateOf(false) }

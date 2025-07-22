@@ -1,8 +1,7 @@
 package com.example.notemark.main.data.remote.api
 
-import com.example.notemark.auth.domain.DataError
+import com.example.notemark.main.data.remote.NoteDTO
 import com.example.notemark.main.domain.model.CreateNoteRequest
-import com.example.notemark.main.domain.model.Note
 import com.example.notemark.main.domain.model.NotesResponse
 
 interface NoteService {
@@ -10,11 +9,11 @@ interface NoteService {
     suspend fun getNotes(
         page: Int,
         size: Int,
-    ): Result<NotesResponse>
+    ): NotesResponse
 
     suspend fun createNote(
         body: CreateNoteRequest
-    ): Result<Note>
+    ): Result<NoteDTO>
 
     suspend fun deleteNote(
         id: String

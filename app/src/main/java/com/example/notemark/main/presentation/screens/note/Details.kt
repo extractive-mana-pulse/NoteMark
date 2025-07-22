@@ -59,6 +59,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.notemark.R
 import com.example.notemark.auth.presentation.util.DeviceConfiguration
 import com.example.notemark.main.domain.model.Note
@@ -66,7 +67,7 @@ import com.example.notemark.main.domain.model.getFormattedCreatedAt
 import com.example.notemark.main.domain.model.getFormattedUpdatedAt
 import com.example.notemark.main.presentation.vm.DetailsScreenUiState
 import com.example.notemark.main.presentation.vm.DetailsViewModel
-import com.example.notemark.main.presentation.vm.MainViewModel
+import com.example.notemark.main.presentation.vm.NotesViewModel
 import com.example.notemark.navigation.screens.HomeScreens
 
 @Preview(showBackground = true, showSystemUi = true)
@@ -82,9 +83,9 @@ fun DetailsScreen(
     val viewModel: DetailsViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val mainViewModel: MainViewModel = hiltViewModel()
-    val mainState by mainViewModel.uiState.collectAsStateWithLifecycle()
-    val note = mainState.notes.find { it.id == noteId }
+    val notesViewModel: NotesViewModel = hiltViewModel()
+    val notes = notesViewModel.notePagingFlow.collectAsLazyPagingItems()
+    val note = notes.itemSnapshotList.items.find { it.id == noteId }
 
     LaunchedEffect(uiState.requestedOrientation) {
         uiState.requestedOrientation?.let { orientation ->
@@ -386,7 +387,7 @@ private fun DetailsBody(
     note: Note?,
     noteId: String
 ) {
-    if (note != null && note.id == noteId) {
+    if (note != null && note.id.toString() == noteId) {
         Column(
             modifier = Modifier.verticalScroll(scrollState)
         ) {

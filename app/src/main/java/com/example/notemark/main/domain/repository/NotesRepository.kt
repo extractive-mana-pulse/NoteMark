@@ -1,5 +1,7 @@
 package com.example.notemark.main.domain.repository
 
+import com.example.notemark.main.data.local.NoteEntity
+import com.example.notemark.main.data.remote.NoteDTO
 import com.example.notemark.main.data.remote.repositoryImpl.NoteServiceImpl
 import com.example.notemark.main.domain.model.CreateNoteRequest
 import com.example.notemark.main.domain.model.Note
@@ -10,27 +12,17 @@ import kotlinx.coroutines.flow.flow
 class NotesRepository(
     private val api: NoteServiceImpl
 ) {
-    
-    fun getNotes(
-        page: Int,
-        size: Int
-    ): Flow<Result<NotesResponse>> = flow {
-        emit(api.getNotes(page, size))
-    }
+
+    suspend fun getNotes(): NotesResponse = api.getNotes(
+        page = 1,
+        size = 10
+    )
 
     fun createNote(
         body: CreateNoteRequest
-    ) : Flow<Result<Note>> = flow {
+    ) : Flow<Result<NoteDTO>> = flow {
         emit(api.createNote(body))
     }
-
-//    fun updateNote(
-//        id: String,
-//        body: CreateNoteRequest
-//    ) : Flow<Result<Note>> = flow {
-//        emit(api.updateNote(id, body))
-//    }
-
 
     suspend fun deleteNote(noteId: String): Result<Unit> {
         return api.deleteNote(noteId)
