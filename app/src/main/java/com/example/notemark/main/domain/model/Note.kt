@@ -1,5 +1,6 @@
 package com.example.notemark.main.domain.model
 
+import com.example.notemark.main.formatAsDetailsDate
 import com.example.notemark.main.formatAsNoteDate
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -15,4 +16,4 @@ data class Note(
 )
 
 fun Note.getFormattedCreatedAt(): String = createdAt.formatAsNoteDate()
-fun Note.getFormattedUpdatedAt(): String = updatedAt?.formatAsNoteDate() ?: ""
+fun Note.getFormattedUpdatedAt(): String = updatedAt?.formatAsDetailsDate() ?: ""

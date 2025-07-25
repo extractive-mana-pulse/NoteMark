@@ -32,10 +32,10 @@ class NoteRemoteMediator(
                 LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
                 LoadType.APPEND -> {
                     val lastItem = state.lastItemOrNull()
-                    if(lastItem == null){
+                    if(lastItem == null) {
                         return MediatorResult.Success(endOfPaginationReached = true)
                     }
-                    state.config.pageSize + 1
+                    noteDatabase.dao.getNotesCount()
                 }
             }
             val notesResponses = noteApi.getNotes(

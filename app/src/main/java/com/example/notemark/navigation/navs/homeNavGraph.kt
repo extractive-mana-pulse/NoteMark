@@ -1,16 +1,21 @@
 package com.example.notemark.navigation.navs
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.toRoute
-import com.example.notemark.main.presentation.screens.note.CreateNoteScreen
-import com.example.notemark.main.presentation.screens.note.DetailsScreen
-import com.example.notemark.main.presentation.screens.note.HomeScreen
+import com.example.notemark.AndroidConnectivityObserver
+import com.example.notemark.ConnectivityViewModel
 import com.example.notemark.main.presentation.screens.ProfileScreen
 import com.example.notemark.main.presentation.screens.SettingsScreen
+import com.example.notemark.main.presentation.screens.note.CreateNoteScreen
+import com.example.notemark.main.presentation.screens.note.DetailsScreen
 import com.example.notemark.main.presentation.screens.note.EditNoteScreen
+import com.example.notemark.main.presentation.screens.note.HomeScreen
 import com.example.notemark.navigation.graphs.Graph
 import com.example.notemark.navigation.screens.HomeScreens
 
@@ -24,7 +29,19 @@ internal fun NavGraphBuilder.homeNavGraph(
     ) {
 
         composable(route = HomeScreens.Home.route) {
-            HomeScreen(navController = navController)
+            val context = LocalContext.current
+            val connectivityViewModel = viewModel<ConnectivityViewModel> {
+                ConnectivityViewModel(
+                    connectivityObserver = AndroidConnectivityObserver(
+                        context = context
+                    )
+                )
+            }
+            val connectivityState = connectivityViewModel.isConnected.collectAsStateWithLifecycle()
+            HomeScreen(
+                navController = navController,
+                connectivityState = connectivityState
+            )
         }
 
         composable<HomeScreens.Details> {

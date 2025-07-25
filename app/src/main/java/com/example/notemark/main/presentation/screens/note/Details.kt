@@ -63,7 +63,6 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.notemark.R
 import com.example.notemark.auth.presentation.util.DeviceConfiguration
 import com.example.notemark.main.domain.model.Note
-import com.example.notemark.main.domain.model.getFormattedCreatedAt
 import com.example.notemark.main.domain.model.getFormattedUpdatedAt
 import com.example.notemark.main.presentation.vm.DetailsScreenUiState
 import com.example.notemark.main.presentation.vm.DetailsViewModel
@@ -387,7 +386,7 @@ private fun DetailsBody(
     note: Note?,
     noteId: String
 ) {
-    if (note != null && note.id.toString() == noteId) {
+    if (note != null && note.id == noteId) {
         Column(
             modifier = Modifier.verticalScroll(scrollState)
         ) {
@@ -419,7 +418,7 @@ private fun DetailsBody(
                         )
                     )
                     Text(
-                        text = note.getFormattedCreatedAt(),
+                        text = note.getFormattedUpdatedAt(),
                         style = MaterialTheme.typography.titleSmall.copy(
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Bold

@@ -9,51 +9,76 @@ import java.util.Locale
 
 object DateFormatter {
 
-    private val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm", Locale.ENGLISH)
-    
+    private val homeCurrentYearFormatter = DateTimeFormatter.ofPattern("dd MMM", Locale.ENGLISH)
+    private val homeOtherYearFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)
+    private val detailsFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm", Locale.ENGLISH)
+
     /**
-     * Formats a timestamp to the required format: "dd MMM yyyy, HH:mm"
+     * Formats a timestamp for home screen display:
+     * - "dd MMM" for current year (e.g., "19 Apr")
+     * - "dd MMM yyyy" for other years (e.g., "19 Apr 2024")
      * If the timestamp is less than 5 minutes ago, returns "Just now"
      */
-    fun formatNoteDate(timestamp: Long): String {
+    fun formatForHome(timestamp: Long): String {
+        val noteTime = Instant.ofEpochMilli(timestamp)
+
+        val localDateTime = LocalDateTime.ofInstant(noteTime, ZoneId.systemDefault())
+        val currentYear = LocalDateTime.now().year
+        val noteYear = localDateTime.year
+        return if (noteYear == currentYear) {
+            localDateTime.format(homeCurrentYearFormatter)
+        } else {
+            localDateTime.format(homeOtherYearFormatter)
+        }
+    }
+
+    /**
+     * Formats a timestamp for details screen display: "dd MMM yyyy, HH:mm"
+     * If the timestamp is less than 5 minutes ago, returns "Just now"
+     */
+    fun formatForDetails(timestamp: Long): String {
         val now = Instant.now()
         val noteTime = Instant.ofEpochMilli(timestamp)
-        
-        // Check if less than 5 minutes ago
+
         val minutesDiff = ChronoUnit.MINUTES.between(noteTime, now)
-        
+
         return if (minutesDiff < 5) {
             "Just now"
         } else {
             val localDateTime = LocalDateTime.ofInstant(noteTime, ZoneId.systemDefault())
-            localDateTime.format(formatter)
+            localDateTime.format(detailsFormatter)
         }
     }
-    
+
     /**
-     * Formats an ISO 8601 string to the required format
+     * Formats an ISO 8601 string for home screen display
      */
-    fun formatNoteDate(isoString: String): String {
+    fun formatForHome(isoString: String): String {
         return try {
             val instant = Instant.parse(isoString)
-            formatNoteDate(instant.toEpochMilli())
+            formatForHome(instant.toEpochMilli())
         } catch (e: Exception) {
-            // Fallback if parsing fails
             "Invalid date"
         }
     }
-    
+
     /**
-     * Gets current timestamp in milliseconds
+     * Formats an ISO 8601 string for details screen display
      */
-    fun getCurrentTimestamp(): Long = System.currentTimeMillis()
-    
+    fun formatForDetails(isoString: String): String {
+        return try {
+            val instant = Instant.parse(isoString)
+            formatForDetails(instant.toEpochMilli())
+        } catch (e: Exception) {
+            "Invalid date"
+        }
+    }
+
     /**
      * Gets current timestamp as ISO 8601 string
      */
     fun getCurrentIsoString(): String = Instant.now().toString()
 }
 
-// Extension functions for easier usage
-fun Long.formatAsNoteDate(): String = DateFormatter.formatNoteDate(this)
-fun String.formatAsNoteDate(): String = DateFormatter.formatNoteDate(this)
+fun String.formatAsNoteDate(): String = DateFormatter.formatForHome(this)
+fun String.formatAsDetailsDate(): String = DateFormatter.formatForDetails(this)

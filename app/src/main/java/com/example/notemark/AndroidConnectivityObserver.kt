@@ -4,13 +4,14 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import android.util.Log
 import androidx.core.content.getSystemService
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
 class AndroidConnectivityObserver(
-    private val context: Context,
+    context: Context,
 ): ConnectivityObserver {
 
     private val connectivityManager = context.getSystemService<ConnectivityManager>()

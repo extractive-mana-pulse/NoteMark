@@ -5,8 +5,6 @@ import androidx.paging.ExperimentalPagingApi
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.room.Room
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.notemark.core.manager.SessionManager
 import com.example.notemark.main.data.local.NoteDatabase
 import com.example.notemark.main.data.local.NoteEntity

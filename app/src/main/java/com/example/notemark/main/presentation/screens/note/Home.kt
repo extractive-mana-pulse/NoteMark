@@ -1,5 +1,6 @@
 package com.example.notemark.main.presentation.screens.note
 
+import android.app.Activity
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -23,6 +25,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -46,6 +49,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -72,6 +76,7 @@ import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
+import androidx.window.core.layout.WindowWidthSizeClass
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.rememberLottieAnimatable
@@ -79,18 +84,22 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.notemark.R
 import com.example.notemark.auth.presentation.util.DeviceConfiguration
 import com.example.notemark.core.manager.SessionManager
+import com.example.notemark.core.truncateAtWord
 import com.example.notemark.main.domain.model.Note
 import com.example.notemark.main.domain.model.getFormattedCreatedAt
 import com.example.notemark.main.presentation.vm.DeleteNoteUiState
 import com.example.notemark.main.presentation.vm.NotesViewModel
 import com.example.notemark.navigation.screens.AuthScreens
 import com.example.notemark.navigation.screens.HomeScreens
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    connectivityState: State<Boolean>
 ) {
     val context = LocalContext.current
     val viewModel: NotesViewModel = hiltViewModel()
@@ -121,6 +130,7 @@ fun HomeScreen(
 
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val deviceConfiguration = DeviceConfiguration.fromWindowSizeClass(windowSizeClass)
+    val isPhone = deviceConfiguration == DeviceConfiguration.MOBILE_PORTRAIT
 
     when(deviceConfiguration) {
         DeviceConfiguration.MOBILE_PORTRAIT -> {
@@ -129,7 +139,8 @@ fun HomeScreen(
                 navController = navController,
                 username = username,
                 viewModel = viewModel,
-                notes = notesList
+                notes = notesList,
+                connectivityState = connectivityState,
             )
         }
         DeviceConfiguration.MOBILE_LANDSCAPE -> {
@@ -144,7 +155,8 @@ fun HomeScreen(
                 navController = navController,
                 username = username,
                 viewModel = viewModel,
-                notes = notesList
+                notes = notesList,
+                connectivityState = connectivityState
             )
         }
         DeviceConfiguration.TABLET_PORTRAIT,
@@ -155,7 +167,8 @@ fun HomeScreen(
                 navController = navController,
                 username = username,
                 viewModel = viewModel,
-                notes = notesList
+                notes = notesList,
+                connectivityState = connectivityState
             )
         }
     }
@@ -169,7 +182,8 @@ private fun MainContent(
     navController: NavHostController,
     username: String?,
     viewModel: NotesViewModel,
-    notes: LazyPagingItems<Note>
+    notes: LazyPagingItems<Note>,
+    connectivityState: State<Boolean>
 ) {
     val context = LocalContext.current
     LaunchedEffect(notes.loadState) {
@@ -196,10 +210,22 @@ private fun MainContent(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.app_name),
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(end = 4.dp)
+                        )
+                        if (!connectivityState.value) {
+                            Icon(
+                                imageVector = ImageVector.vectorResource(R.drawable.cloud_off),
+                                contentDescription = "Offline",
+                                tint = Color(0x66535364),
+                            )
+                        }
+                    }
                 },
                 actions = {
                     Icon(
@@ -275,11 +301,13 @@ private fun MainContent(
                 notes.loadState.refresh is LoadState.Loading
             ) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp).align(Alignment.CenterHorizontally)
+                    modifier = Modifier
+                        .size(24.dp)
+                        .align(Alignment.CenterHorizontally)
                 )
             } else {
                 LazyVerticalStaggeredGrid(
-                    columns = StaggeredGridCells.Fixed(2),
+                    columns = StaggeredGridCells.Fixed(2),// it actually depends on screen orientation 2 on portrait and 3 on landscape
                     state = rememberLazyStaggeredGridState(),
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(16.dp),
@@ -300,13 +328,22 @@ private fun MainContent(
                                 )
                             }
                         }
+                        if (notes.loadState.append is LoadState.Loading) {
+                            item(span = StaggeredGridItemSpan.FullLine) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 )
-                if (notes.loadState.append is LoadState.Loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp).align(Alignment.CenterHorizontally)
-                    )
-                }
             }
             EmptyState(notes)
         }
@@ -344,6 +381,10 @@ fun NoteItem(
     notes: LazyPagingItems<Note>
 ) {
 
+    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+    val deviceConfiguration = DeviceConfiguration.fromWindowSizeClass(windowSizeClass)
+    val isPhone = deviceConfiguration == DeviceConfiguration.MOBILE_PORTRAIT
+
     var contextMenuNoteId by rememberSaveable { mutableStateOf<String?>(null) }
     val haptics = LocalHapticFeedback.current
 
@@ -380,11 +421,15 @@ fun NoteItem(
 
         Text(
             text = note.title,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleMedium.copy(
+                color = MaterialTheme.colorScheme.onSurface
+            ),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
 
         Text(
-            text = note.content,
+            text = note.content.truncateAtWord(if (isPhone) 150 else 250),
             style = MaterialTheme.typography.bodySmall,
             maxLines = 3,
             overflow = TextOverflow.Ellipsis,
@@ -424,7 +469,6 @@ fun NoteActionSheet(
                 onDismissSheet()
             }
             is DeleteNoteUiState.Error -> {
-                Log.e("NoteActionSheet", (deleteNoteState as DeleteNoteUiState.Error).message)
                 Toast.makeText(
                     context,
                     (deleteNoteState as DeleteNoteUiState.Error).message,
@@ -505,14 +549,6 @@ private fun SuccessContent() {
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
-
-        Text(
-            text = "Your note has been permanently removed",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 4.dp)
-        )
     }
 }
 
@@ -550,7 +586,7 @@ private fun ActionContent(
                     Text(
                         text = when (deleteNoteState) {
                             is DeleteNoteUiState.Loading -> "Deleting..."
-                            else -> "Delete Note"
+                            else -> "Delete Note?"
                         },
                         style = MaterialTheme.typography.bodyLarge.copy(
                             color = if (deleteNoteState is DeleteNoteUiState.Loading) {
@@ -563,7 +599,7 @@ private fun ActionContent(
                 },
                 supportingContent = {
                     Text(
-                        text = "This action cannot be undone",
+                        text = "Are you sure you want to delete this note? This action cannot be undone.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

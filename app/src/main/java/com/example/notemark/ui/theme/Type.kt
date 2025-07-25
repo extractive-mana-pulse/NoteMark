@@ -19,8 +19,8 @@ val Typography = Typography(
     titleMedium = TextStyle(
         fontFamily = FontFamily(Font(R.font.space_grotesk_regular)),
         fontWeight = FontWeight.Bold,
-        fontSize = 32.sp,
-        lineHeight = 36.sp,
+        fontSize = 20.sp,
+        lineHeight = 24.sp,
         letterSpacing = 0.sp
     ),
     titleSmall = TextStyle(
