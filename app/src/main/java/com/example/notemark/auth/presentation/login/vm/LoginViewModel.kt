@@ -56,25 +56,21 @@ class LoginViewModel @Inject constructor(
     private val _logoutState = MutableStateFlow<LogoutState>(LogoutState.Idle)
     val logoutState: StateFlow<LogoutState> = _logoutState.asStateFlow()
 
-    fun logoutUser() {
+    fun logoutUser(refreshToken: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 _logoutState.value = LogoutState.Loading
 
-                // Call logout API
-                val result = logoutService.logout()
+                val result = logoutService.logout(refreshToken = refreshToken)
 
-                // Clear local data regardless of API result
                 sessionManager.clearTokens()
 
                 if (result != null) {
                     _logoutState.value = LogoutState.Success("Logged out successfully")
                 } else {
-                    // Even if API fails, we cleared local data, so consider it success
                     _logoutState.value = LogoutState.Success("Logged out successfully")
                 }
             } catch (e: Exception) {
-                // Even if API fails, clear local data and consider it success
                 sessionManager.clearTokens()
                 _logoutState.value = LogoutState.Success("Logged out successfully")
             }

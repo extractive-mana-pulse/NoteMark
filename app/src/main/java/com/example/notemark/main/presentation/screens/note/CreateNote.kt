@@ -55,9 +55,10 @@ import androidx.navigation.compose.rememberNavController
 import com.example.notemark.R
 import com.example.notemark.auth.presentation.util.DeviceConfiguration
 import com.example.notemark.main.DateFormatter
-import com.example.notemark.main.domain.model.CreateNoteRequest
+import com.example.notemark.main.domain.model.NoteRequest
 import com.example.notemark.main.presentation.vm.NotesViewModel
 import com.example.notemark.navigation.screens.HomeScreens
+import java.text.DateFormat
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -163,12 +164,12 @@ private fun NoteCreationBody(
                         onClick = {
                             if (title.isNotBlank() && content.isNotBlank()) {
                                 noteState.isLoading
-                                val noteRequest = CreateNoteRequest(
+                                val noteRequest = NoteRequest(
                                     id = uuid.toString(),
                                     title = title.trim(),
                                     content = content.trim(),
                                     createdAt = creationTime,
-                                    updatedAt = creationTime
+                                    updatedAt = creationTime // here we need to pass empty data. because we do not have updatedAt when we just create note
                                 )
                                 viewModel.createNote(noteRequest)
                             }

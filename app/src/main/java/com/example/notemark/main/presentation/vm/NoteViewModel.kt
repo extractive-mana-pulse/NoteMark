@@ -5,12 +5,14 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.cachedIn
 import androidx.paging.map
+import com.example.notemark.main.data.local.NoteDatabase
 import com.example.notemark.main.data.local.NoteEntity
 import com.example.notemark.main.data.remote.NoteDTO
 import com.example.notemark.main.data.remote.toNote
-import com.example.notemark.main.domain.model.CreateNoteRequest
+import com.example.notemark.main.domain.model.NoteRequest
 import com.example.notemark.main.domain.repository.NotesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +23,7 @@ import javax.inject.Inject
 @HiltViewModel
 class NotesViewModel @Inject constructor(
     private val repository: NotesRepository,
+    private val noteDatabase: NoteDatabase,
     pager: Pager<Int, NoteEntity>
 ) : ViewModel() {
 
@@ -34,10 +37,10 @@ class NotesViewModel @Inject constructor(
         .cachedIn(viewModelScope)
 
 
-    private val _createNoteState = MutableStateFlow(CreateNoteUiState())
-    val createNoteState: StateFlow<CreateNoteUiState> = _createNoteState.asStateFlow()
+    private val _createNoteState = MutableStateFlow(NoteUiState())
+    val createNoteState: StateFlow<NoteUiState> = _createNoteState.asStateFlow()
 
-    fun createNote(noteRequest: CreateNoteRequest) {
+    fun createNote(noteRequest: NoteRequest) {
         viewModelScope.launch {
             _createNoteState.value = _createNoteState.value.copy(isLoading = true, error = null)
 
@@ -62,6 +65,35 @@ class NotesViewModel @Inject constructor(
             }
         }
     }
+    private val _updateNoteState = MutableStateFlow(NoteUiState())
+    val updateNoteState: StateFlow<NoteUiState> = _updateNoteState.asStateFlow()
+
+    fun updateNote(noteRequest: NoteRequest) {
+        viewModelScope.launch {
+            _updateNoteState.value = _updateNoteState.value.copy(isLoading = true, error = null)
+
+            val result = repository.updateNote(noteRequest)
+
+            result.collect { result ->
+                result.fold(
+                    onSuccess = { data ->
+                        _updateNoteState.value = _updateNoteState.value.copy(
+                            isLoading = false,
+                            isSuccess = true,
+                            createdNote = data
+                        )
+                        },
+                    onFailure = { error ->
+                        _updateNoteState.value = _updateNoteState.value.copy(
+                            isLoading = false,
+                            error = error.message ?: "Unknown error occurred while creating error."
+                        )
+                    }
+                )
+            }
+        }
+    }
+
     private val _deleteNoteState = MutableStateFlow<DeleteNoteUiState>(DeleteNoteUiState.Idle)
     val deleteNoteState: StateFlow<DeleteNoteUiState> = _deleteNoteState.asStateFlow()
 
@@ -86,6 +118,13 @@ class NotesViewModel @Inject constructor(
         }
     }
     fun resetDeleteState() { _deleteNoteState.value = DeleteNoteUiState.Idle }
+
+    // this function is to clear all saved notes locally of the user.
+    fun clear() {
+        viewModelScope.launch(Dispatchers.IO) {
+            noteDatabase.dao.clearAll()
+        }
+    }
 }
 sealed class DeleteNoteUiState {
     object Idle : DeleteNoteUiState()
@@ -94,7 +133,7 @@ sealed class DeleteNoteUiState {
     data class Error(val message: String) : DeleteNoteUiState()
 }
 
-data class CreateNoteUiState(
+data class NoteUiState(
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
     val createdNote: NoteDTO? = null,

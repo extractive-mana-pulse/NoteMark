@@ -1,6 +1,5 @@
 package com.example.notemark.main.presentation.screens.note
 
-import android.app.Activity
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -74,9 +73,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
-import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
-import androidx.window.core.layout.WindowWidthSizeClass
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.rememberLottieAnimatable
@@ -91,28 +88,22 @@ import com.example.notemark.main.presentation.vm.DeleteNoteUiState
 import com.example.notemark.main.presentation.vm.NotesViewModel
 import com.example.notemark.navigation.screens.AuthScreens
 import com.example.notemark.navigation.screens.HomeScreens
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     navController: NavHostController = rememberNavController(),
-    connectivityState: State<Boolean>
+    connectivityState: State<Boolean>,
+    notesList: LazyPagingItems<Note>
 ) {
     val context = LocalContext.current
-    val viewModel: NotesViewModel = hiltViewModel()
-    val notesList = viewModel.notePagingFlow.collectAsLazyPagingItems()
-
     val sessionManager = SessionManager(context)
     val username = sessionManager.getUserName()
     val accessToken = sessionManager.getAccessToken()
     val refreshToken = sessionManager.getRefreshToken()
 
-    LaunchedEffect(
-        Unit
-    ) {
+    LaunchedEffect(Unit) {
         Log.d("HomeScreen", "Username: ${sessionManager.getUserName()}")
         Log.d("HomeScreen", "Access Token: ${sessionManager.getAccessToken()}")
         Log.d("HomeScreen", "Refresh Token: ${sessionManager.getRefreshToken()}")
@@ -130,7 +121,6 @@ fun HomeScreen(
 
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val deviceConfiguration = DeviceConfiguration.fromWindowSizeClass(windowSizeClass)
-    val isPhone = deviceConfiguration == DeviceConfiguration.MOBILE_PORTRAIT
 
     when(deviceConfiguration) {
         DeviceConfiguration.MOBILE_PORTRAIT -> {
@@ -138,9 +128,9 @@ fun HomeScreen(
                 modifier = Modifier,
                 navController = navController,
                 username = username,
-                viewModel = viewModel,
                 notes = notesList,
                 connectivityState = connectivityState,
+                columnCount = 2
             )
         }
         DeviceConfiguration.MOBILE_LANDSCAPE -> {
@@ -154,9 +144,9 @@ fun HomeScreen(
                     .consumeWindowInsets(WindowInsets.navigationBars),
                 navController = navController,
                 username = username,
-                viewModel = viewModel,
                 notes = notesList,
-                connectivityState = connectivityState
+                connectivityState = connectivityState,
+                columnCount = 3
             )
         }
         DeviceConfiguration.TABLET_PORTRAIT,
@@ -166,13 +156,12 @@ fun HomeScreen(
                 modifier = Modifier,
                 navController = navController,
                 username = username,
-                viewModel = viewModel,
                 notes = notesList,
-                connectivityState = connectivityState
+                connectivityState = connectivityState,
+                columnCount = 3
             )
         }
     }
-
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -181,9 +170,9 @@ private fun MainContent(
     modifier: Modifier,
     navController: NavHostController,
     username: String?,
-    viewModel: NotesViewModel,
     notes: LazyPagingItems<Note>,
-    connectivityState: State<Boolean>
+    connectivityState: State<Boolean>,
+    columnCount: Int
 ) {
     val context = LocalContext.current
     LaunchedEffect(notes.loadState) {
@@ -297,9 +286,7 @@ private fun MainContent(
                 .background(MaterialTheme.colorScheme.surface)
                 .padding(innerPadding)
         ) {
-            if (
-                notes.loadState.refresh is LoadState.Loading
-            ) {
+            if (notes.loadState.refresh is LoadState.Loading) {
                 CircularProgressIndicator(
                     modifier = Modifier
                         .size(24.dp)
@@ -307,7 +294,7 @@ private fun MainContent(
                 )
             } else {
                 LazyVerticalStaggeredGrid(
-                    columns = StaggeredGridCells.Fixed(2),// it actually depends on screen orientation 2 on portrait and 3 on landscape
+                    columns = StaggeredGridCells.Fixed(columnCount),
                     state = rememberLazyStaggeredGridState(),
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(16.dp),
@@ -323,7 +310,6 @@ private fun MainContent(
                                     modifier = Modifier,
                                     navController = navController,
                                     note = it,
-                                    viewModel = viewModel,
                                     notes = notes
                                 )
                             }
@@ -361,8 +347,7 @@ private fun EmptyState(notes: LazyPagingItems<Note>) {
             contentAlignment = Alignment.TopCenter
         ) {
             Text(
-                text = "You’ve got an empty board,\n" +
-                        "let’s place your first note on it!",
+                text = stringResource(R.string.empty_container_text),
                 style = MaterialTheme.typography.titleSmall.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -377,7 +362,6 @@ fun NoteItem(
     modifier: Modifier,
     navController: NavHostController = rememberNavController(),
     note: Note,
-    viewModel: NotesViewModel,
     notes: LazyPagingItems<Note>
 ) {
 
@@ -440,7 +424,7 @@ fun NoteItem(
         NoteActionSheet(
             isVisible = note.id == contextMenuNoteId,
             onDismissSheet = { contextMenuNoteId = null },
-            viewModel = viewModel,
+
             noteId = contextMenuNoteId ?: "",
             notes = notes
         )
@@ -452,11 +436,11 @@ fun NoteItem(
 fun NoteActionSheet(
     isVisible: Boolean,
     onDismissSheet: () -> Unit,
-    viewModel: NotesViewModel,
     noteId: String,
     notes: LazyPagingItems<Note>
 ) {
     val context = LocalContext.current
+    val viewModel: NotesViewModel = hiltViewModel()
     val deleteNoteState by viewModel.deleteNoteState.collectAsStateWithLifecycle()
     val onDeleteClick = { viewModel.deleteNote(noteId = noteId) }
 

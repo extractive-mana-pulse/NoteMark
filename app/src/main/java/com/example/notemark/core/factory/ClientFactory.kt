@@ -1,6 +1,5 @@
 package com.example.notemark.core.factory
 
-import android.util.Log
 import com.example.notemark.core.HttpRoutes
 import com.example.notemark.core.manager.SessionManager
 import io.ktor.client.HttpClient
@@ -80,10 +79,10 @@ class HttpClientFactory @Inject constructor(
 
                     refreshTokens {
                         val refreshToken = sessionManager.getRefreshToken()
-                        Log.d("TokenRefresh", "Attempting refresh with token: ${refreshToken?.take(10)}...")
+
 
                         if (refreshToken.isNullOrEmpty()) {
-                            Log.w("TokenRefresh", "No refresh token available, clearing tokens")
+
                             sessionManager.clearTokens()
                             return@refreshTokens BearerTokens(accessToken = "", refreshToken = "")
                         }
@@ -98,19 +97,16 @@ class HttpClientFactory @Inject constructor(
 
                             if (response.status.isSuccess()) {
                                 val tokenResponse = response.body<AccessTokenResponse>()
-                                Log.d("TokenRefresh", "Token refresh successful")
                                 sessionManager.saveTokens(tokenResponse.accessToken, tokenResponse.refreshToken)
                                 BearerTokens(
                                     accessToken = tokenResponse.accessToken,
                                     refreshToken = tokenResponse.refreshToken
                                 )
                             } else {
-                                Log.e("TokenRefresh", "Token refresh failed with status: ${response.status}")
                                 sessionManager.clearTokens()
                                 BearerTokens(accessToken = "", refreshToken = "")
                             }
                         } catch (e: Exception) {
-                            Log.e("TokenRefresh", "Token refresh exception: ${e.message}")
                             sessionManager.clearTokens()
                             BearerTokens(accessToken = "", refreshToken = "")
                         }

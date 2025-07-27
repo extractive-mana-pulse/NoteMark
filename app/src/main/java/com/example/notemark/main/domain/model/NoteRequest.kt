@@ -5,11 +5,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class CreateNoteRequest(
+data class NoteRequest(
     val id: String,
     val title: String,
     val content: String,
     val createdAt: String = DateFormatter.getCurrentIsoString(),
     @SerialName("lastEditedAt")
-    val updatedAt: String = DateFormatter.getCurrentIsoString()
+    val updatedAt: String? = DateFormatter.getCurrentIsoString()
 )

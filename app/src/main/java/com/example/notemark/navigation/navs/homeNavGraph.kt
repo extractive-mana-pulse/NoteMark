@@ -1,6 +1,7 @@
 package com.example.notemark.navigation.navs
 
 import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
@@ -8,6 +9,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.toRoute
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.notemark.AndroidConnectivityObserver
 import com.example.notemark.ConnectivityViewModel
 import com.example.notemark.main.presentation.screens.ProfileScreen
@@ -16,6 +18,7 @@ import com.example.notemark.main.presentation.screens.note.CreateNoteScreen
 import com.example.notemark.main.presentation.screens.note.DetailsScreen
 import com.example.notemark.main.presentation.screens.note.EditNoteScreen
 import com.example.notemark.main.presentation.screens.note.HomeScreen
+import com.example.notemark.main.presentation.vm.NotesViewModel
 import com.example.notemark.navigation.graphs.Graph
 import com.example.notemark.navigation.screens.HomeScreens
 
@@ -37,18 +40,25 @@ internal fun NavGraphBuilder.homeNavGraph(
                     )
                 )
             }
+            val viewModel: NotesViewModel = hiltViewModel()
+            val notesList = viewModel.notePagingFlow.collectAsLazyPagingItems()
             val connectivityState = connectivityViewModel.isConnected.collectAsStateWithLifecycle()
             HomeScreen(
                 navController = navController,
-                connectivityState = connectivityState
+                connectivityState = connectivityState,
+                notesList = notesList
             )
         }
 
         composable<HomeScreens.Details> {
+            val notesViewModel: NotesViewModel = hiltViewModel()
+            val notes = notesViewModel.notePagingFlow.collectAsLazyPagingItems()
             val argument = it.toRoute<HomeScreens.Details>()
+
             DetailsScreen(
                 navController = navController,
                 noteId = argument.noteId,
+                notes = notes
             )
         }
         composable<HomeScreens.EditNote> {

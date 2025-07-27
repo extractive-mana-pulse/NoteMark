@@ -30,13 +30,13 @@ val ColorScheme.extraColor: Color @Composable get() = extendedColor(
 )
 
 val Shapes = Shapes(
-    extraSmall = RoundedCornerShape(5.dp),
-    medium = RoundedCornerShape(15.dp)
+    extraSmall = RoundedCornerShape(6.dp),
+    medium = RoundedCornerShape(16.dp)
 )
 
 @Composable
 fun NoteMarkTheme(
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     MaterialTheme(
         colorScheme = LightColorTheme,

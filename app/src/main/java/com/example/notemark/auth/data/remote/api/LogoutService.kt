@@ -4,6 +4,6 @@ import com.example.notemark.core.factory.AccessTokenResponse
 
 interface LogoutService {
 
-    suspend fun logout(): AccessTokenResponse?
+    suspend fun logout(refreshToken: String): AccessTokenResponse?
 
 }

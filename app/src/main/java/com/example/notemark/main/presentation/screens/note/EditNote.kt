@@ -1,6 +1,5 @@
 package com.example.notemark.main.presentation.screens.note
 
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -35,10 +34,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -53,10 +52,10 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.notemark.R
 import com.example.notemark.auth.presentation.util.DeviceConfiguration
 import com.example.notemark.main.DateFormatter
-import com.example.notemark.main.domain.model.CreateNoteRequest
+import com.example.notemark.main.domain.model.NoteRequest
+import com.example.notemark.main.domain.model.getFormattedCreatedAt
 import com.example.notemark.main.presentation.vm.NotesViewModel
 import com.example.notemark.navigation.screens.HomeScreens
-import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,8 +71,8 @@ fun EditNoteScreen(
         DeviceConfiguration.MOBILE_PORTRAIT -> {
             EditNoteScreenBody(
                 modifier = Modifier,
-                navController,
-                noteId
+                navController = navController,
+                noteId = noteId
             )
         }
         DeviceConfiguration.MOBILE_LANDSCAPE -> {
@@ -85,17 +84,17 @@ fun EditNoteScreen(
                     .windowInsetsPadding(WindowInsets.displayCutout)
                     .fillMaxSize()
                     .consumeWindowInsets(WindowInsets.navigationBars),
-                navController,
-                noteId
+                navController = navController,
+                noteId = noteId
             )
         }
         DeviceConfiguration.TABLET_PORTRAIT,
         DeviceConfiguration.TABLET_LANDSCAPE,
         DeviceConfiguration.DESKTOP -> {
             EditNoteScreenBody(
-                Modifier,
-                navController,
-                noteId
+                modifier = Modifier,
+                navController = navController,
+                noteId = noteId
             )
         }
     }
@@ -110,14 +109,12 @@ private fun EditNoteScreenBody(
 ) {
 
     val context = LocalContext.current
-    val uuid = remember { UUID.randomUUID() }
     val viewModel: NotesViewModel = hiltViewModel()
-    val noteState by viewModel.createNoteState.collectAsStateWithLifecycle()
-    val creationTime by remember { mutableStateOf(DateFormatter.getCurrentIsoString()) }
+    val noteState by viewModel.updateNoteState.collectAsStateWithLifecycle()
+    val updateTime by remember { mutableStateOf(DateFormatter.getCurrentIsoString()) }
 
-    val notesViewModel: NotesViewModel = hiltViewModel()
-    val notes = notesViewModel.notePagingFlow.collectAsLazyPagingItems()
-    val note = notes.itemSnapshotList.items.find { it.id.toString() == noteId }
+    val notes = viewModel.notePagingFlow.collectAsLazyPagingItems()
+    val note = notes.itemSnapshotList.items.find { it.id == noteId }
 
     LaunchedEffect(noteState) {
         if (noteState.isSuccess) {
@@ -132,14 +129,10 @@ private fun EditNoteScreenBody(
     LaunchedEffect(noteState.error) {
         noteState.error?.let { error ->
             Toast.makeText(context, error, Toast.LENGTH_LONG).show()
-            Log.d(
-                "CreateNoteScreen",
-                "CreateNoteScreen: ${noteState.error}"
-            )
         }
     }
 
-    if (note != null && note.id.toString() == noteId) {
+    if (note != null && note.id == noteId) {
         var title by remember { mutableStateOf(note.title) }
         var content by remember { mutableStateOf(note.content) }
         var showExitDialog by remember { mutableStateOf(false) }
@@ -184,18 +177,15 @@ private fun EditNoteScreenBody(
                     actions = {
                         TextButton(
                             onClick = {
-
                                 if (title.isNotBlank() && content.isNotBlank()) {
-                                    noteState.isLoading
-                                    val noteRequest = CreateNoteRequest(
-                                        id = uuid.toString(),
+                                    val noteRequest = NoteRequest(
+                                        id = noteId,
                                         title = title.trim(),
                                         content = content.trim(),
-                                        createdAt = creationTime,
-                                        updatedAt = creationTime
+                                        createdAt = note.getFormattedCreatedAt(),
+                                        updatedAt = updateTime
                                     )
-//                                viewModel.createNote(noteRequest)
-//                                update note logic here
+                                    viewModel.updateNote(noteRequest)
                                 }
                             },
                             enabled = !noteState.isLoading && title.isNotBlank() && content.isNotBlank()
@@ -206,7 +196,7 @@ private fun EditNoteScreenBody(
                                 )
                             } else {
                                 Text(
-                                    text = "update note".uppercase(),
+                                    text = stringResource(R.string.update_note).uppercase(),
                                     color = MaterialTheme.colorScheme.primary,
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
@@ -230,16 +220,6 @@ private fun EditNoteScreenBody(
                     .background(MaterialTheme.colorScheme.onPrimary)
                     .padding(innerPadding),
             ) {
-                noteState.error?.let { error ->
-                    Text(
-                        text = error,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .align(Alignment.Center)
-                    )
-                }
-
                 Column {
                     TextField(
                         value = title,
@@ -249,6 +229,14 @@ private fun EditNoteScreenBody(
                         textStyle = MaterialTheme.typography.titleLarge.copy(
                             color = MaterialTheme.colorScheme.onSurface
                         ),
+                        placeholder = {
+                            Text(
+                                text = "Note Title",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            )
+                        },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.onPrimary,
                             unfocusedContainerColor = MaterialTheme.colorScheme.onPrimary,
@@ -292,13 +280,13 @@ private fun EditNoteScreenBody(
                 onDismissRequest = { showExitDialog = false },
                 title = {
                     Text(
-                        text = "Discard Changes?",
+                        text = stringResource(R.string.discard_changes),
                         fontWeight = FontWeight.Bold
                     )
                 },
                 text = {
                     Text(
-                        text = "You have unsaved changes. If you discard now, all changes will be lost.",
+                        text = stringResource(R.string.dialog_content_text),
                         fontSize = 14.sp,
                         lineHeight = 20.sp
                     )
@@ -311,7 +299,7 @@ private fun EditNoteScreenBody(
                         }
                     ) {
                         Text(
-                            text = "Discard",
+                            text = stringResource(R.string.discard),
                             color = MaterialTheme.colorScheme.error
                         )
                     }
@@ -320,7 +308,9 @@ private fun EditNoteScreenBody(
                     TextButton(
                         onClick = { showExitDialog = false }
                     ) {
-                        Text("Keep Editing")
+                        Text(
+                            text = stringResource(R.string.keep_editing)
+                        )
                     }
                 }
             )

@@ -4,7 +4,7 @@ import com.example.notemark.core.HttpRoutes
 import com.example.notemark.core.manager.SessionManager
 import com.example.notemark.main.data.remote.NoteDTO
 import com.example.notemark.main.data.remote.api.NoteService
-import com.example.notemark.main.domain.model.CreateNoteRequest
+import com.example.notemark.main.domain.model.NoteRequest
 import com.example.notemark.main.domain.model.NotesResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -12,6 +12,7 @@ import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -37,10 +38,27 @@ class NoteServiceImpl(
         }
     }
 
-    override suspend fun createNote(body: CreateNoteRequest): Result<NoteDTO> {
+    override suspend fun createNote(body: NoteRequest): Result<NoteDTO> {
         return try {
             val accessToken = sessionManager.getAccessToken()
             val response = client.post(
+                urlString = HttpRoutes.NOTES
+            ) {
+                contentType(ContentType.Application.Json)
+                setBody(body)
+                header("Authorization", "Bearer $accessToken")
+                header("X-User-Email", HttpRoutes.EMAIL)
+            }
+            Result.success(response.body<NoteDTO>())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateNote(body: NoteRequest): Result<NoteDTO> {
+        return try {
+            val accessToken = sessionManager.getAccessToken()
+            val response = client.put(
                 urlString = HttpRoutes.NOTES
             ) {
                 contentType(ContentType.Application.Json)
@@ -62,14 +80,8 @@ class NoteServiceImpl(
                 header(HttpHeaders.Accept, "application/json")
                 header("X-User-Email", HttpRoutes.EMAIL)
             }
-            println("Response status: ${response.status}")
-            println("Response headers: ${response.headers}")
-            println("Content-Type: ${response.headers[HttpHeaders.ContentType]}")
-
             Result.success(response.body())
-
         } catch (e: Exception) {
-            println("Delete note error: ${e.message}")
             Result.failure(e)
         }
     }

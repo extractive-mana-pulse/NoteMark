@@ -1,7 +1,7 @@
 package com.example.notemark.main.data.remote.api
 
 import com.example.notemark.main.data.remote.NoteDTO
-import com.example.notemark.main.domain.model.CreateNoteRequest
+import com.example.notemark.main.domain.model.NoteRequest
 import com.example.notemark.main.domain.model.NotesResponse
 
 interface NoteService {
@@ -12,7 +12,11 @@ interface NoteService {
     ): NotesResponse
 
     suspend fun createNote(
-        body: CreateNoteRequest
+        body: NoteRequest
+    ): Result<NoteDTO>
+
+    suspend fun updateNote(
+        body: NoteRequest
     ): Result<NoteDTO>
 
     suspend fun deleteNote(

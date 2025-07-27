@@ -14,7 +14,8 @@ import io.ktor.http.isSuccess
 class LogoutServiceImpl(
     private val client: HttpClient
 ): LogoutService {
-    override suspend fun logout(): AccessTokenResponse? {
+
+    override suspend fun logout(refreshToken: String): AccessTokenResponse? {
         return try {
             val response = client.post(
                 urlString = HttpRoutes.LOGOUT
