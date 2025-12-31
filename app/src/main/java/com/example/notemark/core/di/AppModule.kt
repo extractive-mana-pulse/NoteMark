@@ -5,6 +5,9 @@ import androidx.paging.ExperimentalPagingApi
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.room.Room
+import com.example.notemark.AndroidConnectivityObserver
+import com.example.notemark.ConnectivityObserver
+import com.example.notemark.ConnectivityViewModel
 import com.example.notemark.core.manager.SessionManager
 import com.example.notemark.main.data.local.NoteDatabase
 import com.example.notemark.main.data.local.NoteEntity
@@ -55,8 +58,24 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideNoteService(client: HttpClient, sessionManager: SessionManager): NoteService {
-        return NoteServiceImpl(client, sessionManager)
+    fun provideConnectivityObserver(
+        @ApplicationContext context: Context
+    ): ConnectivityObserver = AndroidConnectivityObserver(context)
+
+    @Provides
+    @Singleton
+    fun provideNoteService(
+        client: HttpClient,
+        sessionManager: SessionManager,
+        @ApplicationContext applicationContext: Context,
+        connectivityObserver: ConnectivityObserver
+    ): NoteService {
+        return NoteServiceImpl(
+            client,
+            sessionManager,
+            provideNoteDatabase(applicationContext),
+            connectivityObserver
+        )
     }
 
     @Provides
@@ -67,7 +86,17 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideNoteServiceImpl(api: HttpClient, sessionManager: SessionManager): NoteServiceImpl {
-        return NoteServiceImpl(api, sessionManager)
+    fun provideNoteServiceImpl(
+        api: HttpClient,
+        sessionManager: SessionManager,
+        @ApplicationContext applicationContext: Context,
+        connectivityObserver: ConnectivityObserver
+    ): NoteServiceImpl {
+        return NoteServiceImpl(
+            api,
+            sessionManager,
+            provideNoteDatabase(applicationContext),
+            connectivityObserver
+        )
     }
 }

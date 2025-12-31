@@ -52,19 +52,15 @@ import com.example.notemark.R
 import com.example.notemark.auth.presentation.login.vm.LoginViewModel
 import com.example.notemark.auth.presentation.login.vm.LogoutState
 import com.example.notemark.auth.presentation.util.DeviceConfiguration
-import com.example.notemark.auth.presentation.vm.AuthViewModel
 import com.example.notemark.core.manager.SessionManager
 import com.example.notemark.main.presentation.vm.NotesViewModel
 import com.example.notemark.navigation.screens.AuthScreens
-import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     navController: NavHostController = rememberNavController()
 ) {
-    val authViewModel: AuthViewModel = hiltViewModel()
-
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val deviceConfiguration = DeviceConfiguration.fromWindowSizeClass(windowSizeClass)
 
@@ -72,13 +68,13 @@ fun SettingsScreen(
         DeviceConfiguration.MOBILE_PORTRAIT -> {
             SettingsItem(
                 navController,
-                authViewModel
+
             )
         }
         DeviceConfiguration.MOBILE_LANDSCAPE -> {
             SettingsItem(
                 navController,
-                authViewModel
+
             )
         }
         DeviceConfiguration.TABLET_PORTRAIT,
@@ -86,7 +82,6 @@ fun SettingsScreen(
         DeviceConfiguration.DESKTOP -> {
             SettingsItem(
                 navController,
-                authViewModel
             )
         }
     }
@@ -96,7 +91,6 @@ fun SettingsScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 private fun SettingsItem(
     navController: NavHostController,
-    authViewModel: AuthViewModel
 ) {
     val context = LocalContext.current
     val sessionManager = SessionManager(context)
@@ -119,6 +113,7 @@ private fun SettingsItem(
             }
 
             is LogoutState.Success -> {
+                notesViewModel.clear()
                 navController.navigate(AuthScreens.Landing.route) {
                     popUpTo(0) {
                         inclusive = true
@@ -126,9 +121,8 @@ private fun SettingsItem(
                 }
                 loginViewModel.clearState()
             }
-
             LogoutState.Loading,
-            LogoutState.Idle -> { /* No action needed */ }
+            LogoutState.Idle -> {}
         }
     }
 
@@ -180,7 +174,6 @@ private fun SettingsItem(
                 SettingsContent(
                     onLogoutClick = {
                         loginViewModel.logoutUser(refreshToken = refreshToken ?: "")
-                        notesViewModel.clear()
                     },
                     onSyncClick = {
                         Toast.makeText(

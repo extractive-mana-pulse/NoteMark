@@ -42,11 +42,13 @@ internal fun NavGraphBuilder.homeNavGraph(
             }
             val viewModel: NotesViewModel = hiltViewModel()
             val notesList = viewModel.notePagingFlow.collectAsLazyPagingItems()
+            val noteUiState = viewModel.createNoteState.collectAsStateWithLifecycle()
             val connectivityState = connectivityViewModel.isConnected.collectAsStateWithLifecycle()
             HomeScreen(
                 navController = navController,
                 connectivityState = connectivityState,
-                notesList = notesList
+                notesList = notesList,
+                noteUiState = noteUiState
             )
         }
 

@@ -16,8 +16,8 @@ class AndroidConnectivityObserver(
 
     private val connectivityManager = context.getSystemService<ConnectivityManager>()
 
-    override val isConnected: Flow<Boolean>
-        get() = callbackFlow {
+    override fun isConnected(): Flow<Boolean> {
+        return callbackFlow {
             val callback = object : ConnectivityManager.NetworkCallback() {
 
                 override fun onCapabilitiesChanged(
@@ -53,4 +53,5 @@ class AndroidConnectivityObserver(
                 connectivityManager?.unregisterNetworkCallback(callback)
             }
         }
+    }
 }

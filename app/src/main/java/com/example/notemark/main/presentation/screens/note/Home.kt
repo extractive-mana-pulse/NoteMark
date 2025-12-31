@@ -51,6 +51,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -69,6 +70,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import androidx.paging.LoadState
@@ -80,22 +82,29 @@ import com.airbnb.lottie.compose.rememberLottieAnimatable
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.notemark.R
 import com.example.notemark.auth.presentation.util.DeviceConfiguration
+import com.example.notemark.core.getInitials
 import com.example.notemark.core.manager.SessionManager
 import com.example.notemark.core.truncateAtWord
+import com.example.notemark.main.DateFormatter
 import com.example.notemark.main.domain.model.Note
+import com.example.notemark.main.domain.model.NoteRequest
 import com.example.notemark.main.domain.model.getFormattedCreatedAt
 import com.example.notemark.main.presentation.vm.DeleteNoteUiState
+import com.example.notemark.main.presentation.vm.NoteUiState
 import com.example.notemark.main.presentation.vm.NotesViewModel
 import com.example.notemark.navigation.screens.AuthScreens
 import com.example.notemark.navigation.screens.HomeScreens
 import kotlinx.coroutines.delay
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     navController: NavHostController = rememberNavController(),
     connectivityState: State<Boolean>,
-    notesList: LazyPagingItems<Note>
+    notesList: LazyPagingItems<Note>,
+    noteUiState: State<NoteUiState>,
+
 ) {
     val context = LocalContext.current
     val sessionManager = SessionManager(context)
@@ -172,9 +181,14 @@ private fun MainContent(
     username: String?,
     notes: LazyPagingItems<Note>,
     connectivityState: State<Boolean>,
-    columnCount: Int
+    columnCount: Int,
 ) {
     val context = LocalContext.current
+    val uuid = remember { UUID.randomUUID() }
+    val noteViewModel = hiltViewModel<NotesViewModel>()
+    val noteState by noteViewModel.createNoteState.collectAsStateWithLifecycle()
+    val creationTime by remember { mutableStateOf(DateFormatter.getCurrentIsoString()) }
+
     LaunchedEffect(notes.loadState) {
         when {
             notes.loadState.refresh is LoadState.Error -> {
@@ -192,6 +206,28 @@ private fun MainContent(
                 val error = (notes.loadState.append as LoadState.Error).error
                 Log.e("Home", "Append error: ${error.message}")
             }
+        }
+    }
+
+    val initials = getInitials(username ?: "U")
+
+    LaunchedEffect(noteState) {
+        if (noteState.isSuccess) {
+            navController.navigate(HomeScreens.Home.route) {
+                popUpTo(HomeScreens.Home.route) {
+                    inclusive = true
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(noteState.error) {
+        noteState.error?.let { error ->
+            Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+            Log.d(
+                "CreateNoteScreen",
+                "CreateNoteScreen: ${noteState.error}"
+            )
         }
     }
 
@@ -232,15 +268,8 @@ private fun MainContent(
                             .size(40.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(MaterialTheme.colorScheme.primary)
-                            .padding(10.dp)
-                            .clickable {
-                                Toast.makeText(
-                                    context,
-                                    "This page is not available yet!",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            },
-                        text = "${username?.take(2)}",
+                            .padding(10.dp),
+                        text = initials,
                         style = MaterialTheme.typography.titleSmall.copy(
                             color = MaterialTheme.colorScheme.onPrimary,
                             textAlign = TextAlign.Center
@@ -252,9 +281,19 @@ private fun MainContent(
                 )
             )
         },
+
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
+                    noteViewModel.createNote(
+                        NoteRequest(
+                            id = uuid.toString(),
+                            title = "Note Title",
+                            content = "",
+                            createdAt = creationTime,
+                            updatedAt = creationTime,
+                        )
+                    )
                     navController.navigate(HomeScreens.CreateNote.route)
                 },
                 modifier = Modifier
