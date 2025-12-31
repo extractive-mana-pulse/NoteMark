@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -44,10 +45,12 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.notemark.R
@@ -96,11 +99,12 @@ fun CreateNoteScreen(
     }
 }
 
+@PreviewLightDark
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 fun CreateNoteBody(
     modifier: Modifier = Modifier,
-    navController: NavHostController,
+    navController: NavHostController = rememberNavController(),
 ) {
     val viewModel: NotesViewModel = hiltViewModel()
     val focusRequester = remember { FocusRequester() }
@@ -225,7 +229,7 @@ fun CreateNoteBody(
             TextField(
                 value = content,
                 onValueChange = { content = it }, // No auto-save in create mode
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.weight(1f),
                 placeholder = {
                     Text(
                         text = "Amet minim mollit non deserunt ullamco est sit aliqua dolor do amet sint.",
@@ -246,7 +250,7 @@ fun CreateNoteBody(
                     disabledIndicatorColor = MaterialTheme.colorScheme.onPrimary,
                 )
             )
-            Spacer(modifier = Modifier.imePadding().weight(1f))
+//            Spacer(modifier = Modifier.imePadding().weight(1f))
         }
 
         noteState.error?.let { error ->
