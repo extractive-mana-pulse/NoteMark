@@ -66,8 +66,9 @@ hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hiltA
 hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hiltAndroidCompiler" }
 hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hiltAndroidCompiler" }
 
-# adaptive-layout
 lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottieCompose" }
+
+# adaptive-layout
 material3-adaptive = { module="org.jetbrains.compose.material3.adaptive:adaptive", version.ref="adaptive" }
 
 # splash-screen

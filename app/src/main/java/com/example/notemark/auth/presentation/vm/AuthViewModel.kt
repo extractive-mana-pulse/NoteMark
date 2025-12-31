@@ -29,13 +29,7 @@ class AuthViewModel @Inject constructor(
         }
         _authState.value = newState
     }
-
     fun refreshAuthState() { checkAuthenticationStatus() }
-
-    fun signOut() {
-        sessionManager.clearTokens()
-        _authState.value = AuthState.Unauthenticated
-    }
 }
 
 sealed class AuthState {

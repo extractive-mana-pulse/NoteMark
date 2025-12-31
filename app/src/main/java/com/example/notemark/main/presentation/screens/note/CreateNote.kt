@@ -1,7 +1,6 @@
 package com.example.notemark.main.presentation.screens.note
 
-import android.util.Log
-import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -41,7 +40,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -57,8 +55,6 @@ import com.example.notemark.auth.presentation.util.DeviceConfiguration
 import com.example.notemark.main.DateFormatter
 import com.example.notemark.main.domain.model.NoteRequest
 import com.example.notemark.main.presentation.vm.NotesViewModel
-import com.example.notemark.navigation.screens.HomeScreens
-import java.text.DateFormat
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,13 +68,13 @@ fun CreateNoteScreen(
 
     when(deviceConfiguration) {
         DeviceConfiguration.MOBILE_PORTRAIT -> {
-            NoteCreationBody(
+            CreateNoteBody(
                 modifier = Modifier,
                 navController,
             )
         }
         DeviceConfiguration.MOBILE_LANDSCAPE -> {
-            NoteCreationBody(
+            CreateNoteBody(
                 modifier = Modifier
                     .background(
                         MaterialTheme.colorScheme.onPrimary
@@ -92,7 +88,7 @@ fun CreateNoteScreen(
         DeviceConfiguration.TABLET_PORTRAIT,
         DeviceConfiguration.TABLET_LANDSCAPE,
         DeviceConfiguration.DESKTOP -> {
-            NoteCreationBody(
+            CreateNoteBody(
                 modifier = Modifier,
                 navController,
             )
@@ -102,55 +98,42 @@ fun CreateNoteScreen(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun NoteCreationBody(
-    modifier: Modifier,
+fun CreateNoteBody(
+    modifier: Modifier = Modifier,
     navController: NavHostController,
 ) {
-    val context = LocalContext.current
-    val uuid = remember { UUID.randomUUID() }
     val viewModel: NotesViewModel = hiltViewModel()
     val focusRequester = remember { FocusRequester() }
-    var content by remember { mutableStateOf("") }
     var title by remember { mutableStateOf("") }
+    var content by remember { mutableStateOf("") }
     val noteState by viewModel.createNoteState.collectAsStateWithLifecycle()
-    val creationTime by remember { mutableStateOf(DateFormatter.getCurrentIsoString()) }
-
-    LaunchedEffect(noteState) {
-        if (noteState.isSuccess) {
-            navController.navigate(HomeScreens.Home.route) {
-                popUpTo(HomeScreens.Home.route) {
-                    inclusive = true
-                }
-            }
-        }
-    }
-
-    LaunchedEffect(noteState.error) {
-        noteState.error?.let { error ->
-            Toast.makeText(context, error, Toast.LENGTH_LONG).show()
-            Log.d(
-                "CreateNoteScreen",
-                "CreateNoteScreen: ${noteState.error}"
-            )
-        }
-    }
+    val currentNote by viewModel.currentNote.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
     }
 
+    // Update local state when currentNote changes (from FAB creation)
+    LaunchedEffect(currentNote) {
+        currentNote?.let { note ->
+            if (title != note.title) title = note.title
+            if (content != note.content) content = note.content
+        }
+    }
+
+    // Handle back navigation with empty note cleanup
+    BackHandler {
+        handleCreateModeBackNavigation(viewModel, navController)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        text = ""
-                    )
-                },
+                title = { Text("") },
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            navController.navigateUp()
+                            handleCreateModeBackNavigation(viewModel, navController)
                         }
                     ) {
                         Icon(
@@ -162,24 +145,27 @@ private fun NoteCreationBody(
                 actions = {
                     TextButton(
                         onClick = {
-                            if (title.isNotBlank() && content.isNotBlank()) {
-                                noteState.isLoading
-                                val noteRequest = NoteRequest(
-                                    id = uuid.toString(),
-                                    title = title.trim(),
-                                    content = content.trim(),
-                                    createdAt = creationTime,
-                                    updatedAt = creationTime // here we need to pass empty data. because we do not have updatedAt when we just create note
-                                )
-                                viewModel.createNote(noteRequest)
+                            if (title.isNotBlank() || content.isNotBlank()) {
+                                // Update the existing note instead of creating new one
+                                currentNote?.let { note ->
+                                    val noteRequest = NoteRequest(
+                                        id = note.id,
+                                        title = title.trim(),
+                                        content = content.trim(),
+                                        createdAt = note.createdAt,
+                                        updatedAt = System.currentTimeMillis().toString()
+                                    )
+                                    viewModel.updateNote(noteRequest)
+                                }
+                            } else {
+                                // If empty, just navigate back (will trigger cleanup)
+                                handleCreateModeBackNavigation(viewModel, navController)
                             }
                         },
-                        enabled = !noteState.isLoading && title.isNotBlank() && content.isNotBlank()
+                        enabled = !noteState.isLoading
                     ) {
                         if (noteState.isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                            )
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
                         } else {
                             Text(
                                 text = "save note".uppercase(),
@@ -211,7 +197,7 @@ private fun NoteCreationBody(
         ) {
             TextField(
                 value = title,
-                onValueChange = { title = it },
+                onValueChange = { title = it }, // No auto-save in create mode
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focusRequester),
@@ -238,9 +224,8 @@ private fun NoteCreationBody(
 
             TextField(
                 value = content,
-                onValueChange = { content = it },
-                modifier = Modifier
-                    .fillMaxSize(),
+                onValueChange = { content = it }, // No auto-save in create mode
+                modifier = Modifier.fillMaxSize(),
                 placeholder = {
                     Text(
                         text = "Amet minim mollit non deserunt ullamco est sit aliqua dolor do amet sint.",
@@ -263,13 +248,29 @@ private fun NoteCreationBody(
             )
             Spacer(modifier = Modifier.imePadding().weight(1f))
         }
+
         noteState.error?.let { error ->
             Text(
                 text = error,
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier
-                    .padding(16.dp)
+                modifier = Modifier.padding(16.dp)
             )
         }
     }
+}
+
+private fun handleCreateModeBackNavigation(
+    viewModel: NotesViewModel,
+    navController: NavHostController
+) {
+    // Check if note is empty and delete if needed
+    if (viewModel.isCurrentNoteEmpty()) {
+        viewModel.deleteCurrentNoteIfEmpty()
+    }
+
+    // Clear current note from ViewModel
+    viewModel.clearCurrentNote()
+
+    // Navigate back
+    navController.navigateUp()
 }
