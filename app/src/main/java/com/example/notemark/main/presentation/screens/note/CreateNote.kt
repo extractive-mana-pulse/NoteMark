@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
@@ -47,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.notemark.R
@@ -264,7 +266,7 @@ fun CreateNoteBody(
 
             TextField(
                 value = content,
-                onValueChange = { content = it },
+                onValueChange = { content = it }, // No auto-save in create mode
                 modifier = Modifier.weight(1f),
                 placeholder = {
                     Text(
@@ -286,6 +288,7 @@ fun CreateNoteBody(
                     disabledIndicatorColor = MaterialTheme.colorScheme.onPrimary,
                 )
             )
+//            Spacer(modifier = Modifier.imePadding().weight(1f))
         }
 
         noteState.error?.let { error ->
