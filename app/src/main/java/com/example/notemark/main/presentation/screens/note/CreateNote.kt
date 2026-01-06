@@ -3,14 +3,12 @@ package com.example.notemark.main.presentation.screens.note
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -55,10 +53,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.notemark.R
 import com.example.notemark.auth.presentation.util.DeviceConfiguration
-import com.example.notemark.main.DateFormatter
 import com.example.notemark.main.domain.model.NoteRequest
 import com.example.notemark.main.presentation.vm.NotesViewModel
-import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -110,23 +106,58 @@ fun CreateNoteBody(
     val focusRequester = remember { FocusRequester() }
     var title by remember { mutableStateOf("") }
     var content by remember { mutableStateOf("") }
-    val noteState by viewModel.createNoteState.collectAsStateWithLifecycle()
+    val noteState by viewModel.updateNoteState.collectAsStateWithLifecycle()
     val currentNote by viewModel.currentNote.collectAsStateWithLifecycle()
+    val createNoteState by viewModel.createNoteState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
-
-    // Update local state when currentNote changes (from FAB creation)
+    // Log current note changes
     LaunchedEffect(currentNote) {
+        android.util.Log.d("CreateNote", "Current note changed: ${currentNote?.id}")
         currentNote?.let { note ->
-            if (title != note.title) title = note.title
-            if (content != note.content) content = note.content
+            if (title.isEmpty() || title == "Note Title") title = note.title
+            if (content.isEmpty()) content = note.content
         }
     }
 
-    // Handle back navigation with empty note cleanup
+// In your CreateNoteBody, modify the LaunchedEffect for creating the note:
+// Create initial note when screen opens
+    LaunchedEffect(Unit) {
+        android.util.Log.d("CreateNote", "Screen opened, creating initial note")
+        focusRequester.requestFocus()
+
+        // Generate a unique ID for the note
+        val noteId = java.util.UUID.randomUUID().toString()
+
+        val initialNoteRequest = NoteRequest(
+            id = noteId, // Use generated UUID instead of empty string
+            title = "Note Title",
+            content = "",
+            createdAt = System.currentTimeMillis().toString(),
+            updatedAt = System.currentTimeMillis().toString()
+        )
+        viewModel.createNote(initialNoteRequest)
+    }
+    // Navigate after successful CREATE
+    LaunchedEffect(createNoteState.isSuccess) {
+        if (createNoteState.isSuccess) {
+            android.util.Log.d("CreateNote", "Note created successfully: ${createNoteState.createdNote?.id}")
+            viewModel.resetCreateNoteState()
+        }
+    }
+
+    // Navigate after successful UPDATE
+    LaunchedEffect(noteState.isSuccess) {
+        if (noteState.isSuccess) {
+            android.util.Log.d("CreateNote", "Note updated successfully, navigating back")
+            viewModel.resetUpdateNoteState()
+            viewModel.clearCurrentNote()
+            navController.navigateUp()
+        }
+    }
+
+    // Handle back navigation
     BackHandler {
+        android.util.Log.d("CreateNote", "Back pressed")
         handleCreateModeBackNavigation(viewModel, navController)
     }
 
@@ -137,6 +168,7 @@ fun CreateNoteBody(
                 navigationIcon = {
                     IconButton(
                         onClick = {
+                            android.util.Log.d("CreateNote", "X button clicked")
                             handleCreateModeBackNavigation(viewModel, navController)
                         }
                     ) {
@@ -149,9 +181,15 @@ fun CreateNoteBody(
                 actions = {
                     TextButton(
                         onClick = {
+                            android.util.Log.d("CreateNote", "Save button clicked")
+                            android.util.Log.d("CreateNote", "Title: '$title'")
+                            android.util.Log.d("CreateNote", "Content: '$content'")
+                            android.util.Log.d("CreateNote", "CurrentNote: ${currentNote?.id}")
+                            android.util.Log.d("CreateNote", "isLoading: ${noteState.isLoading}")
+
                             if (title.isNotBlank() || content.isNotBlank()) {
-                                // Update the existing note instead of creating new one
                                 currentNote?.let { note ->
+                                    android.util.Log.d("CreateNote", "Updating note with id: ${note.id}")
                                     val noteRequest = NoteRequest(
                                         id = note.id,
                                         title = title.trim(),
@@ -160,9 +198,9 @@ fun CreateNoteBody(
                                         updatedAt = System.currentTimeMillis().toString()
                                     )
                                     viewModel.updateNote(noteRequest)
-                                }
+                                } ?: android.util.Log.e("CreateNote", "CurrentNote is NULL!")
                             } else {
-                                // If empty, just navigate back (will trigger cleanup)
+                                android.util.Log.d("CreateNote", "Note is empty, navigating back")
                                 handleCreateModeBackNavigation(viewModel, navController)
                             }
                         },
@@ -191,7 +229,7 @@ fun CreateNoteBody(
         },
         contentWindowInsets = WindowInsets.statusBars
     ) { innerPadding ->
-
+        // ... rest of your UI code
         Column(
             modifier = modifier
                 .background(MaterialTheme.colorScheme.onPrimary)
@@ -201,7 +239,7 @@ fun CreateNoteBody(
         ) {
             TextField(
                 value = title,
-                onValueChange = { title = it }, // No auto-save in create mode
+                onValueChange = { title = it },
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focusRequester),
