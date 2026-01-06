@@ -101,7 +101,16 @@ fun DetailsScreen(
             )
         }
         DeviceConfiguration.TABLET_PORTRAIT,
-        DeviceConfiguration.TABLET_LANDSCAPE,
+        DeviceConfiguration.TABLET_LANDSCAPE -> {
+            LandscapeDetailsScreenContent(
+                modifier = Modifier
+                    .windowInsetsPadding(WindowInsets.displayCutout)
+                    .consumeWindowInsets(WindowInsets.navigationBars),
+                navController = navController,
+                note = note,
+                noteId = noteId,
+            )
+        }
         DeviceConfiguration.DESKTOP -> {
             DetailsContent(
                 modifier = Modifier,
@@ -150,62 +159,26 @@ fun LandscapeDetailsScreenContent(
     Box(
         modifier = modifier.fillMaxSize()
     ) {
+        // Main content - this stays in place
         Row(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .padding(top = 24.dp)
-            ) {
-                this@Row.AnimatedVisibility(
-                    visible = !uiState.isReaderMode || uiState.isUiVisible,
-                    enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
-                        animationSpec = tween(300)
-                    ) { -it },
-                    exit = fadeOut(animationSpec = tween(300)) + slideOutVertically(
-                        animationSpec = tween(300)
-                    ) { -it }
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = 80.dp)
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(
-                            onClick = {
-                                if (uiState.isReaderMode) viewModel.toggleReaderMode() else navController.popBackStack()
-                            }
-                        ) {
-                            Icon(
-                                imageVector = ImageVector.vectorResource(R.drawable.ios_arrow_left),
-                                contentDescription = "Navigate up",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        Text(
-                            text = stringResource(R.string.all_notes).uppercase(),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 16.sp,
-                            lineHeight = 24.sp,
-                            letterSpacing = 1.0.sp,
-                            fontFamily = FontFamily(Font(R.font.space_grotesk_regular)),
-                        )
-                    }
+                    viewModel.onScreenTap()
                 }
-            }
+        ) {
+            // Left spacer to account for back button (keep content centered)
+            Spacer(modifier = Modifier.width(64.dp)) // Adjust based on your back button width
 
+            // Content area
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 24.dp)
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) {
-                        viewModel.onScreenTap()
-                    },
+                    .padding(top = 24.dp, bottom = 80.dp) // Add bottom padding for FAB
             ) {
                 if (note != null && note.id == noteId) {
                     Column(
@@ -246,7 +219,7 @@ fun LandscapeDetailsScreenContent(
                                     )
                                 )
                             }
-                            if (!note.getFormattedUpdatedAt().isEmpty()){
+                            if (!note.getFormattedUpdatedAt().isEmpty()) {
                                 Column(
                                     modifier = Modifier.weight(1f),
                                     verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -279,9 +252,9 @@ fun LandscapeDetailsScreenContent(
                                 .fillMaxWidth()
                                 .padding(
                                     if (uiState.isReaderMode && !uiState.isUiVisible) {
-                                        PaddingValues(horizontal = 24.dp, vertical = 32.dp)
+                                        PaddingValues(horizontal = 16.dp, vertical = 32.dp)
                                     } else {
-                                        PaddingValues(16.dp)
+                                        PaddingValues(horizontal = 16.dp, vertical = 32.dp)
                                     }
                                 )
                         )
@@ -297,6 +270,48 @@ fun LandscapeDetailsScreenContent(
             }
         }
 
+        // Back button overlay - positioned absolutely at top-left
+        AnimatedVisibility(
+            visible = !uiState.isReaderMode || uiState.isUiVisible,
+            enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
+                animationSpec = tween(300)
+            ) { -it },
+            exit = fadeOut(animationSpec = tween(300)) + slideOutVertically(
+                animationSpec = tween(300)
+            ) { -it },
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(top = 24.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = {
+                        if (uiState.isReaderMode) viewModel.toggleReaderMode() else navController.popBackStack()
+                    }
+                ) {
+                    Icon(
+                        imageVector = ImageVector.vectorResource(R.drawable.ios_arrow_left),
+                        contentDescription = "Navigate up",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = stringResource(R.string.all_notes).uppercase(),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 16.sp,
+                    lineHeight = 24.sp,
+                    letterSpacing = 1.0.sp,
+                    fontFamily = FontFamily(Font(R.font.space_grotesk_regular)),
+                )
+            }
+        }
+
+        // FAB overlay - positioned absolutely at bottom-center
         AnimatedVisibility(
             visible = !uiState.isReaderMode || uiState.isUiVisible,
             enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
@@ -516,13 +531,16 @@ private fun DetailsContent(
             ) {
                 ExtendedFabFSheet(
                     onEditClick = {
+                        // if we are in reader mode, first exit reader mode then handle the navigation
                         navController.navigate(
                             HomeScreens.EditNote(
                                 noteId = noteId ?: ""
                             )
                         )
                     },
-                    onReaderModeClick = { viewModel.toggleReaderMode() },
+                    onReaderModeClick = {
+                        viewModel.toggleReaderMode()
+                    },
                     isReaderMode = uiState.isReaderMode
                 )
             }
