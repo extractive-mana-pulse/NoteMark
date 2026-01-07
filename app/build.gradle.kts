@@ -1,10 +1,10 @@
-import org.gradle.kotlin.dsl.implementation
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.devtools.ksp") version "2.2.0-RC3-2.0.2"
+    id("com.google.devtools.ksp") version "2.2.10-2.0.2"
     id("dagger.hilt.android.plugin")
     id("kotlinx-serialization")
 }
@@ -42,8 +42,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
+    kotlin {
+        compilerOptions {
+            jvmTarget = JvmTarget.fromTarget("17")
+        }
     }
     buildFeatures {
         compose = true
@@ -68,6 +70,28 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    with(projects) {
+        with(auth) {
+            implementation(data)
+            implementation(domain)
+            implementation(presentation)
+        }
+        with(core) {
+            implementation(data)
+            implementation(domain)
+            implementation(presentation)
+        }
+        with(note) {
+            implementation(data)
+            implementation(domain)
+            implementation(presentation)
+        }
+        with(releases) {
+            implementation(data)
+            implementation(domain)
+            implementation(presentation)
+        }
+    }
 
     // splash screen
     implementation(libs.androidx.core.splashscreen)
@@ -96,15 +120,12 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
     ksp(libs.hilt.compiler)
-    implementation(libs.androidx.hilt.navigation.compose)
 
     // paging
     implementation(libs.androidx.paging.runtime.ktx)
     implementation(libs.androidx.paging.compose)
 
     // room
-    implementation (libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
     implementation (libs.androidx.room.paging)
 
     // lottie files
