@@ -11,7 +11,7 @@ class AndroidLibComposeConventionPlugin : Plugin<Project> {
         target.run {
             pluginManager.run {
                 apply(libs.findPlugin("notemark.android.library").get().get().pluginId)
-                apply(libs.findPlugin("kotlin.compose").get().get().pluginId)
+                apply(libs.findPlugin("compose.compiler").get().get().pluginId)
             }
 
             val extension = extensions.getByType<LibraryExtension>()

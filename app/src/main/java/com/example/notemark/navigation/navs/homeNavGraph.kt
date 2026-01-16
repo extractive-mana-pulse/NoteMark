@@ -10,17 +10,17 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.toRoute
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.example.notemark.AndroidConnectivityObserver
-import com.example.notemark.ConnectivityViewModel
-import com.example.notemark.main.presentation.screens.ProfileScreen
-import com.example.notemark.main.presentation.screens.SettingsScreen
-import com.example.notemark.main.presentation.screens.note.CreateNoteScreen
-import com.example.notemark.main.presentation.screens.note.DetailsScreen
-import com.example.notemark.main.presentation.screens.note.EditNoteScreen
-import com.example.notemark.main.presentation.screens.note.HomeScreen
-import com.example.notemark.main.presentation.vm.NotesViewModel
+import com.example.data.AndroidConnectivityObserver
 import com.example.notemark.navigation.graphs.Graph
+import com.example.notemark.navigation.screens.AuthScreens
 import com.example.notemark.navigation.screens.HomeScreens
+import com.example.presentation.ConnectivityViewModel
+import com.example.presentation.NotesViewModel
+import com.example.presentation.edit_note.CreateNoteScreen
+import com.example.presentation.edit_note.EditNoteScreen
+import com.example.presentation.home.HomeScreen
+import com.example.presentation.note_details.DetailsScreen
+import com.example.presentation.settings.SettingsScreen
 
 internal fun NavGraphBuilder.homeNavGraph(
     navController: NavHostController
@@ -28,10 +28,10 @@ internal fun NavGraphBuilder.homeNavGraph(
 
     navigation(
         route = Graph.HOME,
-        startDestination = HomeScreens.Home.route
+        startDestination = HomeScreens.Home::class.qualifiedName ?: ""
     ) {
 
-        composable(route = HomeScreens.Home.route) {
+        composable<HomeScreens.Home> {
             val context = LocalContext.current
             val connectivityViewModel = viewModel<ConnectivityViewModel> {
                 ConnectivityViewModel(
@@ -41,14 +41,42 @@ internal fun NavGraphBuilder.homeNavGraph(
                 )
             }
             val viewModel: NotesViewModel = hiltViewModel()
+            val username = viewModel.username.collectAsStateWithLifecycle()
+            val accessToken = viewModel.accessToken.collectAsStateWithLifecycle()
+            val refreshToken = viewModel.refreshToken.collectAsStateWithLifecycle()
             val notesList = viewModel.notePagingFlow.collectAsLazyPagingItems()
             val noteUiState = viewModel.createNoteState.collectAsStateWithLifecycle()
             val connectivityState = connectivityViewModel.isConnected.collectAsStateWithLifecycle()
             HomeScreen(
-                navController = navController,
+                onNavigateToHome = {
+                    navController.navigate(HomeScreens.Home) {
+                        popUpTo(HomeScreens.Home) {
+                            inclusive = true
+                        }
+                    }
+                },
+                onNavigateToLogin = {
+                    navController.navigate(AuthScreens.LogIn) {
+                        popUpTo(0) {
+                            inclusive
+                        }
+                    }
+                },
+                onNavigateToSettings = { navController.navigate(HomeScreens.Settings) },
+                onNavigateToCreateNote = { navController.navigate(HomeScreens.CreateNote) },
+                onNavigateToDetailsWithId = {
+                    navController.navigate(
+                        HomeScreens.Details(
+                            noteId = it
+                        )
+                    )
+                },
                 connectivityState = connectivityState,
                 notesList = notesList,
-                noteUiState = noteUiState
+                noteUiState = noteUiState,
+                username = username.value,
+                accessToken = accessToken.value,
+                refreshToken = refreshToken.value
             )
         }
 
@@ -66,21 +94,37 @@ internal fun NavGraphBuilder.homeNavGraph(
         composable<HomeScreens.EditNote> {
             val argument = it.toRoute<HomeScreens.EditNote>()
             EditNoteScreen(
-                navController = navController,
+                onNavigateHome = {
+                    navController.navigate(HomeScreens.Home) {
+                        popUpTo(HomeScreens.Home) {
+                            inclusive = true
+                        }
+                    }
+                },
+                onNavigateUp = {
+                    navController.navigateUp()
+                },
                 noteId = argument.noteId,
             )
         }
 
-        composable(route = HomeScreens.CreateNote.route) {
+        composable<HomeScreens.CreateNote> {
             CreateNoteScreen(navController = navController)
         }
 
-        composable(route = HomeScreens.Profile.route) {
-            ProfileScreen(navController = navController)
-        }
-
-        composable(route = HomeScreens.Settings.route) {
-            SettingsScreen(navController = navController)
+        composable<HomeScreens.Settings> {
+            SettingsScreen(
+                onNavigateToLanding = {
+                    navController.navigate(AuthScreens.Landing) {
+                        popUpTo(0) {
+                            inclusive = true
+                        }
+                    }
+                },
+                onNavigateUp = {
+                    navController.navigateUp()
+                }
+            )
         }
     }
 }
