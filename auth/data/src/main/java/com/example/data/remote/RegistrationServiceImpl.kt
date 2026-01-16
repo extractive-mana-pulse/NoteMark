@@ -1,0 +1,49 @@
+package com.example.data.remote
+
+import com.example.domain.model.RegistrationModel
+import com.example.domain.RegistrationService
+import com.example.domain.HttpRoutes
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
+
+class RegistrationServiceImpl(
+    private val client: HttpClient
+): RegistrationService {
+
+        override suspend fun register(body: RegistrationModel): RegistrationModel? {
+        return try {
+            val response = client.post(
+                urlString = HttpRoutes.REGISTER
+            ) {
+                contentType(ContentType.Application.Json)
+                header("X-User-Email", HttpRoutes.EMAIL)
+                setBody(body)
+            }
+
+            if (response.status.isSuccess()) {
+                try {
+                    response.body<RegistrationModel>()
+                } catch (parseException: Exception) {
+                    println("Response parsing failed but registration succeeded: ${parseException.message}")
+                    RegistrationModel(
+                        username = body.username,
+                        email = body.email,
+                        password = ""
+                    )
+                }
+            } else {
+                println("Registration failed with status: ${response.status}")
+                null
+            }
+        } catch (e: Exception) {
+            println("Registration error: ${e.message}")
+            null
+        }
+    }
+}

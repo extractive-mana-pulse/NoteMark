@@ -19,6 +19,10 @@ dependencies {
 
 gradlePlugin {
     plugins {
+        register("ktorClientConvention") {
+            id = "notemark.convention.ktor.client"
+            implementationClass = "KtorClientConventionPlugin"
+        }
         register("androidApp") {
             id = "notemark.android.application"
             implementationClass = "AndroidAppConventionPlugin"

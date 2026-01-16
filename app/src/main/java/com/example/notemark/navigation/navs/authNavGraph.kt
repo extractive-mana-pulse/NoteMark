@@ -4,38 +4,65 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
-import com.example.notemark.auth.presentation.landing.screens.LandingScreen
-import com.example.notemark.auth.presentation.login.screens.LoginScreen
-import com.example.notemark.auth.presentation.registration.screens.RegistrationScreen
 import com.example.notemark.navigation.graphs.Graph
 import com.example.notemark.navigation.screens.AuthScreens
+import com.example.notemark.navigation.screens.HomeScreens
+import com.example.presentation.landing.screens.LandingScreen
+import com.example.presentation.login.LoginScreen
+import com.example.presentation.registration.RegistrationScreen
 
 internal fun NavGraphBuilder.authNavGraph(
     navController: NavHostController,
 ) {
     navigation(
         route = Graph.AUTH,
-        startDestination = AuthScreens.Landing.route
+        startDestination = AuthScreens.Landing::class.qualifiedName ?: ""
     ) {
-        composable(
-            route = AuthScreens.Landing.route
-        ) {
+        composable<AuthScreens.Landing> {
             LandingScreen(
-                navController = navController,
+                onNavigateToRegistration = {
+                    navController.navigate(AuthScreens.Registration) {
+                        popUpTo(AuthScreens.Landing) {
+                            inclusive = true
+                        }
+                    }
+                },
+                onNavigateToLogIn = {
+                    navController.navigate(AuthScreens.LogIn){
+                        popUpTo(AuthScreens.Landing) {
+                            inclusive = true
+                        }
+                    }
+                }
             )
         }
-        composable(
-            route = AuthScreens.LogIn.route
-        ) {
+        composable<AuthScreens.LogIn> {
             LoginScreen(
-                navController = navController,
+                onNavigateToRegistration = {
+                    navController.navigate(AuthScreens.Registration) {
+                        popUpTo(AuthScreens.LogIn) {
+                            inclusive = true
+                        }
+                    }
+                },
+                onNavigateToHome = {
+                    navController.navigate(HomeScreens.Home) {
+                        popUpTo(0) {
+                            inclusive = true
+                        }
+                    }
+                }
             )
         }
-        composable(
-            route = AuthScreens.Registration.route
-        ) {
+        composable<AuthScreens.Registration> {
             RegistrationScreen(
-                navController = navController,
+                onNavigateToLogIn = {
+                    navController.navigate(AuthScreens.LogIn) {
+                        popUpTo(AuthScreens.Registration) {
+                            inclusive = true
+                        }
+                    }
+                },
             )
         }
     }

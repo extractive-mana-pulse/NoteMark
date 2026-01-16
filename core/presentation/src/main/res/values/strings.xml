@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NoteMark</string>
+    <string name="the_request_timed_out">Request time out</string>
+    <string name="youve_hit_your_rate_limit">Too many request</string>
+    <string name="no_internet">no internet</string>
+    <string name="server_error">Server error occur.</string>
+    <string name="unknown_error">Unknown error, please reach the support center.</string>
+    <string name="disk_full">Disk full, please clean the cache.</string>
+    <string name="invalid_format">Invalid email</string>
+    <string name="note_is_not_deleted">For some reason note is not deleted, please try again or contact support!</string>
+    <string name="logout">Log out</string>
+    <string name="last_sync">Last sync:</string>
+    <string name="sync_data">Sync Data</string>
+    <string name="sync_interval">Sync interval</string>
+    <string name="settings">settings</string>
+    <string name="manual_only">Manual Only</string>
+    <string name="every_15_minutes">15 minutes</string>
+    <string name="every_30_minutes">30 minutes</string>
+    <string name="every_hour">1 hour</string>
+    <string name="empty_container_text">You’ve got an empty board,\n let’s place your first note on it!</string>
+    <string name="all_notes">all notes</string>
+    <string name="date_created">Date created</string>
+    <string name="last_edited">Last edited</string>
+    <string name="update_note">update note</string>
+    <string name="discard_changes">Discard Changes?</string>
+    <string name="dialog_content_text">You have unsaved changes. If you discard now, all changes will be lost.</string>
+    <string name="discard">Discard</string>
+    <string name="keep_editing">Keep Editing</string>
+</resources>

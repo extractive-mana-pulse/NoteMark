@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.presentation"
+    namespace = "com.example.notemark.releases.presentation"
 }
 
 dependencies {

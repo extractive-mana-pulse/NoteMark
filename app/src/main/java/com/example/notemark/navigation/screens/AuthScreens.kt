@@ -3,15 +3,15 @@ package com.example.notemark.navigation.screens
 import kotlinx.serialization.Serializable
 
 @Serializable
-sealed class AuthScreens(val route: String) {
+sealed interface AuthScreens {
 
     @Serializable
-    object Landing: AuthScreens("landing_screen")
+    object Landing: AuthScreens
 
     @Serializable
-    object LogIn : AuthScreens("sign_in")
+    object LogIn : AuthScreens
 
     @Serializable
-    object Registration : AuthScreens("sign_up")
+    object Registration : AuthScreens
 
 }
