@@ -16,9 +16,9 @@ class AndroidAppConventionPlugin : Plugin<Project> {
             pluginManager.run {
                 apply(libs.findPlugin("android.application").get().get().pluginId)
                 apply(libs.findPlugin("kotlin.android").get().get().pluginId)
-                apply(libs.findPlugin("kotlin.compose").get().get().pluginId)
                 apply(libs.findPlugin("kotlin.serialization").get().get().pluginId)
-                apply(libs.findPlugin("room").get().get().pluginId)
+                apply("androidx.room")
+                apply("org.jetbrains.kotlin.plugin.compose")
             }
 
             extensions.configure<RoomExtension> {

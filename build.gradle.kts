@@ -2,9 +2,10 @@
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.android) apply false
-    alias(libs.plugins.kotlin.compose) apply false
-    id("com.google.dagger.hilt.android") version "2.56.2" apply false
-    id("com.google.devtools.ksp") version "2.2.10-2.0.2"
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.2.0" apply false
+    alias(libs.plugins.compose.compiler) apply false
+    alias(libs.plugins.room) apply false
+    id("com.google.dagger.hilt.android") version "2.54" apply false
+    alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.android.library) apply false
 }

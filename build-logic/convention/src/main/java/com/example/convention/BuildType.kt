@@ -19,6 +19,7 @@ internal fun Project.configureBuildTypes(
     commonExtension.run {
         buildFeatures {
             buildConfig = true
+            compose = true
         }
 
         when (extensionType) {
@@ -26,6 +27,7 @@ internal fun Project.configureBuildTypes(
                 extensions.configure<ApplicationExtension> {
                     buildTypes {
                         debug {
+                            buildConfigField ("String", "BASE_URL", "\"https://notemark.pl-coding.com/\"")
                             isMinifyEnabled = false
                             proguardFiles(
                                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -33,6 +35,7 @@ internal fun Project.configureBuildTypes(
                             )
                         }
                         release {
+                            buildConfigField ("String", "BASE_URL", "\"https://notemark.pl-coding.com/\"")
                             isMinifyEnabled = true
                             proguardFiles(
                                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -47,6 +50,7 @@ internal fun Project.configureBuildTypes(
                 extensions.configure<LibraryExtension> {
                     buildTypes {
                         debug {
+                            buildConfigField ("String", "BASE_URL", "\"https://notemark.pl-coding.com/\"")
                             isMinifyEnabled = false
                             proguardFiles(
                                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -54,6 +58,7 @@ internal fun Project.configureBuildTypes(
                             )
                         }
                         release {
+                            buildConfigField ("String", "BASE_URL", "\"https://notemark.pl-coding.com/\"")
                             isMinifyEnabled = true
                             proguardFiles(
                                 getDefaultProguardFile("proguard-android-optimize.txt"),

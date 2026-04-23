@@ -1,17 +1,21 @@
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.notemark.android.library.compose)
+    id("com.google.dagger.hilt.android")
+    alias(libs.plugins.ksp)
 }
 
 android {
-    namespace = "com.example.presentation"
+    namespace = "com.example.notemark.auth.presentation"
 }
 
 dependencies {
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+    with(projects) {
+        implementation(core.domain)
+        implementation(auth.domain)
+        implementation(auth.data)
+        implementation(core.presentation)
+    }
+
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
 }

@@ -3,28 +3,27 @@ package com.example.notemark.navigation.screens
 import kotlinx.serialization.Serializable
 
 @Serializable
-sealed class HomeScreens(val route: String) {
+sealed interface HomeScreens {
 
     @Serializable
-    object Home : HomeScreens("home")
+    data object Home : HomeScreens
 
     @Serializable
-    object Profile : HomeScreens("profile")
+    object Profile : HomeScreens
 
     @Serializable
-    object CreateNote : HomeScreens("create_note")
+    object CreateNote : HomeScreens
 
     @Serializable
     data class EditNote(
         val noteId: String
-    ): HomeScreens("edit_note")
+    ): HomeScreens
 
     @Serializable
-    object Settings : HomeScreens("settings")
+    object Settings : HomeScreens
 
     @Serializable
     data class Details(
         val noteId: String
-    ): HomeScreens("details")
-
+    ): HomeScreens
 }

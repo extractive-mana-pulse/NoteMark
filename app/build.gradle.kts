@@ -1,68 +1,77 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
-    id("com.google.devtools.ksp") version "2.2.10-2.0.2"
-    id("dagger.hilt.android.plugin")
-    id("kotlinx-serialization")
+    alias(libs.plugins.notemark.android.application)
+    id("com.google.dagger.hilt.android")
+    alias(libs.plugins.ksp)
 }
 
 android {
     namespace = "com.example.notemark"
-    compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.notemark"
-        minSdk = 30
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-
-
-    buildTypes {
-        debug {
-            buildConfigField ("String", "BASE_URL", "\"https://notemark.pl-coding.com/\"")
-        }
-        release {
-            isMinifyEnabled = false
-            buildConfigField ("String", "BASE_URL", "\"https://notemark.pl-coding.com/\"")
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlin {
-        compilerOptions {
-            jvmTarget = JvmTarget.fromTarget("17")
-        }
-    }
-    buildFeatures {
-        compose = true
-        buildConfig = true
     }
 }
 
 dependencies {
-
+    // --- Android Core & Lifecycle ---
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.core.splashscreen)
+
+    // --- Compose UI Layer ---
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.material3.adaptive)
+    implementation(libs.lottie.compose)
+
+    // --- Internal Modules (Modularized Architecture) ---
+    // Auth
+    implementation(projects.auth.data)
+    implementation(projects.auth.domain)
+    implementation(projects.auth.presentation)
+    // Core
+    implementation(projects.core.data)
+    implementation(projects.core.domain)
+    implementation(projects.core.presentation)
+    // Note
+    implementation(projects.note.data)
+    implementation(projects.note.domain)
+    implementation(projects.note.presentation)
+    // Releases
+    implementation(projects.releases.data)
+    implementation(projects.releases.domain)
+    implementation(projects.releases.presentation)
+
+    // --- Navigation ---
+    implementation(libs.navigation.compose)
+    implementation(libs.kotlinx.serialization.json)
+
+    // --- Dependency Injection (Hilt) ---
+    implementation(libs.hilt.android)
+    implementation(libs.hilt.navigation.compose)
+    ksp(libs.hilt.android.compiler)
+    ksp(libs.hilt.compiler)
+
+    // --- Networking (Ktor) ---
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.android)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.auth)
+    implementation(libs.ktor.client.logging)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization)
+
+    // --- Paging & Persistence ---
+    implementation(libs.androidx.paging.compose)
+    implementation(libs.androidx.room.paging)
+
+    // --- Testing ---
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -70,6 +79,7 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
     with(projects) {
         with(auth) {
             implementation(data)
@@ -92,45 +102,4 @@ dependencies {
             implementation(presentation)
         }
     }
-
-    // splash screen
-    implementation(libs.androidx.core.splashscreen)
-
-    // icons extension
-    implementation(libs.androidx.material.icons.extended)
-
-    // type-safe navigation
-    implementation(libs.navigation.compose)
-    implementation(libs.kotlinx.serialization.json)
-
-    // adaptive-layout
-    implementation(libs.material3.adaptive)
-
-    // ktor
-    implementation (libs.ktor.client.core)
-    implementation (libs.ktor.client.android)
-    implementation (libs.ktor.serialization)
-    implementation(libs.ktor.client.auth)
-    implementation(libs.ktor.client.content.negotiation)
-    implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.cio)
-    implementation(libs.ktor.client.logging)
-
-    // hilt
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.android.compiler)
-    ksp(libs.hilt.compiler)
-
-    // paging
-    implementation(libs.androidx.paging.runtime.ktx)
-    implementation(libs.androidx.paging.compose)
-
-    // room
-    implementation (libs.androidx.room.paging)
-
-    // lottie files
-    implementation(libs.lottie.compose)
-
-    implementation(libs.androidx.lifecycle.runtime.compose)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
 }
